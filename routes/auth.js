@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
-const UserModel = require("../models/User");
+const UserModel = require("../models/UserModel");
 const multer = require("multer");
 const upload = multer();
 
@@ -85,12 +85,12 @@ router.post("/update-info/:id", upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).send("No image Avatar uploaded.");
   }
-  const id = "0355887042";
-  // const id = req.params.id;
+  // const id = "0355887042";
+  const id = req.params.id;
 
   const params = {
     // Thay the bucket cá nhân, tui để tạm cái bucket trên lớp
-    Bucket: "products111",
+    Bucket: process.env.BUCKET_NAME,
     Key: "Avatar" + id,
     Body: req.file.buffer,
     ContentType: req.file.mimetype,
@@ -120,7 +120,7 @@ router.post("/update-info/:id", upload.single("image"), (req, res) => {
           console.error(error);
         } else {
           res.status(201).json({"message": "Update information successfully"})
-          console.log(user);
+          // console.log(user);
         }
       }
     );
