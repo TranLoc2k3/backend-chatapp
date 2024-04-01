@@ -1,5 +1,5 @@
 const { CostOptimizationHub } = require("aws-sdk");
-const User = require("../models/UserModel");
+const UserModel = require("../models/UserModel");
 const bcrypt = require("bcrypt");
 const getAllUser = async (req, res) => {
   try {
@@ -13,7 +13,7 @@ const getAllUser = async (req, res) => {
 const getUserByID = async (req, res) => {
 
   const userID = req.body.username;
-  const myUser = await User.get(userID);
+  const myUser = await UserModel.get(userID);
   if (myUser) {
     return myUser;
   }
@@ -37,7 +37,7 @@ const getUserByPhone = async (req, res) => {
 const updatePasswordByID = async (req, res) => {
   const userID = req.body.username;
   const newPassword = req.body.password;
-  const myUser = await User.get(userID);
+  const myUser = await UserModel.get(userID);
   if (myUser) {
     bcrypt.hash(newPassword, 10).then(async (hash) => {
       if (hash == myUser.password) {
