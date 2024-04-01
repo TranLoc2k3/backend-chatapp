@@ -9,10 +9,10 @@ const getAllUser = async (req, res) => {
   }
 };
 
-const getUserByID = async (req, res) => {
+const getUserByPhone = async (req, res) => {
   try {
-    const userID = req.body.id;
-    const myUser = await UserModel.get(userID);
+    const phone = req.params.phone;
+    const myUser = await UserModel.get(phone);
     if (myUser) {
       return res.status(200).json(myUser);
     }
@@ -25,5 +25,5 @@ const getUserByID = async (req, res) => {
 
 module.exports = {
   getAllUser,
-  getUserByID
+  getUserByPhone,
 };
