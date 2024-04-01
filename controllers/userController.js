@@ -20,6 +20,20 @@ const getUserByID = async (req, res) => {
   else return "User not found";
 };
 
+const getUserByPhone = async (req, res) => {
+  try {
+    const phone = req.params.phone;
+    const myUser = await UserModel.get(phone);
+    if (myUser) {
+      return res.status(200).json(myUser);
+    }
+    return res.status(404).json({ message: "User not found" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
 const updatePasswordByID = async (req, res) => {
   const userID = req.body.username;
   const newPassword = req.body.password;
@@ -46,5 +60,6 @@ const updatePasswordByID = async (req, res) => {
 module.exports = {
   getAllUser,
   getUserByID,
+  getUserByPhone,
   updatePasswordByID
 };
