@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const UserModel = require("../models/UserModel");
+const UserController = require("../controllers/UserController");
 const multer = require("multer");
 const upload = multer();
 
@@ -119,12 +120,19 @@ router.post("/update-info/:id", upload.single("image"), (req, res) => {
         if (error) {
           console.error(error);
         } else {
-          res.status(201).json({"message": "Update information successfully"})
-          // console.log(user);
+          res.status(201).json({ "message": "Update information successfully" })
         }
       }
     );
   });
 });
+
+
+router.patch("/update-password", async (req, res) => {
+  const { username, password } = req.body;
+  bcrypt.hash(password, 10).then(async (hash) => {
+    await UserController.updatePasswordByID(req, res);
+  })
+})
 
 module.exports = router;
