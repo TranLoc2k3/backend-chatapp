@@ -36,25 +36,27 @@ const getUserByPhone = async (req, res) => {
 
 const updatePasswordByID = async (req, res) => {
   const userID = req.body.username;
-  const newPassword = req.body.password;
+  const oldPassword = req.body.oldpassword;
+  const newPassword = req.body.newpassword;
   const myUser = await UserModel.get(userID);
   if (myUser) {
-    bcrypt.hash(newPassword, 10).then(async (hash) => {
-      if (hash == myUser.password) {
-        res.json({message: "New password must be different from the old one"});
-      }
-      else {
-        myUser.password = hash;
-        try {
-          const newUser = await myUser.save();
-          res.json({message:"Update password success"});
-        } catch (error) {
-          res.json({message:"Update password failed"});
-        }
+    bcrypt.compare(newPassword, myUser.password, (err, res2) => {
+      if (res2) {
+        res.status(400).json({ message: "Password is the same" });
+      } else {
+        bcrypt.hash(newPassword, 10).then(async (hash) => {
+          myUser.password = hash;
+          try {
+            const newUser = await myUser.save();
+            res.json({ message: "Update password success" });
+          } catch (error) {
+            res.json({ message: "Update password failed" });
+          }
+        });
       }
     });
   }
-  else res.json({message: "User not found"});
+  else res.json({ message: "User not found" });
 }
 
 module.exports = {
