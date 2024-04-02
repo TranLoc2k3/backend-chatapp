@@ -1,5 +1,6 @@
 const { CostOptimizationHub } = require("aws-sdk");
 const UserModel = require("../models/UserModel");
+const FriendRequestModel = require("../models/FriendRequestModel");
 const bcrypt = require("bcrypt");
 const getAllUser = async (req, res) => {
   try {
@@ -11,13 +12,11 @@ const getAllUser = async (req, res) => {
 };
 
 const getUserByID = async (req, res) => {
-
   const userID = req.body.username;
   const myUser = await UserModel.get(userID);
   if (myUser) {
     return myUser;
-  }
-  else return "User not found";
+  } else return "User not found";
 };
 
 const getUserByPhone = async (req, res) => {
@@ -32,7 +31,7 @@ const getUserByPhone = async (req, res) => {
     console.error(error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
-}
+};
 
 const updatePasswordByID = async (req, res) => {
   const userID = req.body.username;
@@ -44,8 +43,7 @@ const updatePasswordByID = async (req, res) => {
     bcrypt.compare(oldPassword, myUser.password, (err, res1) => {
       if (!res1) {
         res.status(400).json({ message: "Old password is incorrect" });
-      }
-      else {
+      } else {
         bcrypt.compare(newPassword, myUser.password, (err, res2) => {
           if (res2) {
             res.status(400).json({ message: "Password is the same" });
@@ -63,13 +61,12 @@ const updatePasswordByID = async (req, res) => {
         });
       }
     });
-  }
-  else res.json({ message: "User not found" });
-}
+  } else res.json({ message: "User not found" });
+};
 
 module.exports = {
   getAllUser,
   getUserByID,
   getUserByPhone,
-  updatePasswordByID
+  updatePasswordByID,
 };
