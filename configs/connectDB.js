@@ -7,7 +7,7 @@ const connectDB = () => {
       accessKeyId: process.env.ACCESS_ID,
       secretAccessKey: process.env.ACCESS_KEY,
     },
-    region: "local",
+    region: process.env.AWS_REGION
   });
   dynamoose.aws.ddb.set(ddb);
 };
