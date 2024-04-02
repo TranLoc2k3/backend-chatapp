@@ -36,29 +36,21 @@ const getUserByPhone = async (req, res) => {
 
 const updatePasswordByID = async (req, res) => {
   const userID = req.body.username;
-  const oldPassword = req.body.oldpassword;
   const newPassword = req.body.newpassword;
 
   const myUser = await UserModel.get(userID);
   if (myUser) {
-    bcrypt.compare(oldPassword, myUser.password, (err, res1) => {
-      if (!res1) {
-        res.json({ message: "Old password is incorrect" });
-      }
-      else {
-        bcrypt.compare(newPassword, myUser.password, (err, res2) => {
-          if (res2) {
-            res.json({ message: "Password is the same" });
-          } else {
-            bcrypt.hash(newPassword, 10).then(async (hash) => {
-              myUser.password = hash;
-              try {
-                const newUser = await myUser.save();
-                res.json({ message: "Update password success" });
-              } catch (error) {
-                res.json({ message: "Update password failed" });
-              }
-            });
+    bcrypt.compare(newPassword, myUser.password, (err, res2) => {
+      if (res2) {
+        res.json({ message: "Password is the same" });
+      } else {
+        bcrypt.hash(newPassword, 10).then(async (hash) => {
+          myUser.password = hash;
+          try {
+            const newUser = await myUser.save();
+            res.json({ message: "Update password success" });
+          } catch (error) {
+            res.json({ message: "Update password failed" });
           }
         });
       }
