@@ -43,12 +43,12 @@ const updatePasswordByID = async (req, res) => {
   if (myUser) {
     bcrypt.compare(oldPassword, myUser.password, (err, res1) => {
       if (!res1) {
-        res.status(400).json({ message: "Old password is incorrect" });
+        res.json({ message: "Old password is incorrect" });
       }
       else {
         bcrypt.compare(newPassword, myUser.password, (err, res2) => {
           if (res2) {
-            res.status(400).json({ message: "Password is the same" });
+            res.json({ message: "Password is the same" });
           } else {
             bcrypt.hash(newPassword, 10).then(async (hash) => {
               myUser.password = hash;
