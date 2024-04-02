@@ -129,10 +129,7 @@ router.post("/update-info/:id", upload.single("image"), (req, res) => {
 
 
 router.patch("/update-password", async (req, res) => {
-  const { username, password } = req.body;
-  bcrypt.hash(password, 10).then(async (hash) => {
-    await UserController.updatePasswordByID(req, res);
-  })
+  await UserController.updatePasswordByID(req, res);
 })
 
 module.exports = router;
