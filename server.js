@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const { Server } = require("socket.io");
 const { createServer } = require("node:http");
 
 const connectDB = require("./configs/connectDB");
@@ -25,35 +24,11 @@ connectDB();
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 
-let onlineUsers = [];
-
-const addNewUser = (phone, socketId) => {
-  !onlineUsers.some((user) => user.phone === phone) &&
-    onlineUsers.push({ phone, socketId });
-};
-
-const removeUser = (socketId) => {
-  onlineUsers = onlineUsers.filter((item) => item.socketId !== socketId);
-};
-
-const getUser = (phone) => {
-  return onlineUsers.find((user) => user.phone === phone);
-};
-
 io.on("connection", (socket) => {
   console.log("a user connected with id: ", socket.id);
 
-  socket.on("new user connect", (phone) => {
-    addNewUser(phone, socket.id);
-    io.emit("get online users", onlineUsers);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("disconnect");
-    removeUser(socket.id);
-  });
-
-  socketController.handleSendFriendRequest(socket);
+  socketController.handleUserOnline(socket);
+  socketController.handleSendFriendRequest(io, socket);
 });
 
 server.listen(port, () => {

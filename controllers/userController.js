@@ -1,4 +1,3 @@
-const { CostOptimizationHub } = require("aws-sdk");
 const UserModel = require("../models/UserModel");
 const FriendRequestModel = require("../models/FriendRequestModel");
 const bcrypt = require("bcrypt");
@@ -64,9 +63,116 @@ const updatePasswordByID = async (req, res) => {
   } else res.json({ message: "User not found" });
 };
 
+const sendFriendRequest = async (senderId, receiverId) => {
+  const myFriendRequest = await FriendRequestModel.scan({
+    senderId,
+    receiverId,
+  }).exec();
+  try {
+    if (myFriendRequest.length > 0) {
+      if (myFriendRequest[0].status === "ACCEPTED") {
+        return {
+          code: 2,
+          message: "Already friend",
+        };
+      }
+      return {
+        code: 0,
+        mesage: "Request was sended",
+      };
+    }
+
+    const newFriendRequest = await FriendRequestModel.create({
+      senderId: senderId,
+      receiverId: receiverId,
+      status: "PENDING",
+    });
+
+    if (newFriendRequest) {
+      return {
+        code: 1,
+        mesage: "Request send successfully",
+        data: {
+          senderId,
+          receiverId,
+        },
+      };
+    }
+  } catch (e) {
+    return {
+      code: -1,
+      message: "Error !" + e,
+    };
+  }
+};
+
+const addToFriendList = async (senderId, receiverId) => {
+  const senderUser = await UserModel.get(senderId);
+  const receiverUser = await UserModel.get(receiverId);
+  const res = await UserModel.update({
+    ID: senderId,
+    friendList: [...senderUser.friendList, receiverId],
+  });
+  console.log(res);
+};
+
+const handleFriendRequest = async (req, res) => {
+  const { id, type } = req.body;
+  // type = ACCEPTED | DECLINED
+  try {
+    const friendRequest = await FriendRequestModel.scan({
+      id,
+      status: "PENDING",
+    }).exec();
+
+    if (friendRequest.length > 0) {
+      // const updated = await FriendRequestModel.update({
+      //   id,
+      //   status: type,
+      // });
+      // console.log(updated);
+      if (type === "ACCEPTED") {
+        addToFriendList("84704462651", "84766785319");
+      }
+      return res.status(200).json({
+        code: 1,
+        message: `Friend request ${type.toLowerCase()} successfully`,
+      });
+    }
+
+    return res.status(200).json({
+      code: 1,
+      message: `Not found friend request`,
+    });
+  } catch (e) {
+    console.log(e);
+    return res.status(200).json("Error from server");
+  }
+};
+
+const getAllFriendRequests = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const friendRequest = await FriendRequestModel.scan({
+      receiverId: id,
+      status: "PENDING",
+    }).exec();
+    for (let item of friendRequest) {
+      const sender = await UserModel.get(item.senderId);
+      item.sender = sender;
+    }
+    return res.status(200).json(friendRequest);
+  } catch (e) {
+    return res.status(200).json({ message: "Error from server" });
+  }
+};
+
 module.exports = {
   getAllUser,
   getUserByID,
   getUserByPhone,
   updatePasswordByID,
+  sendFriendRequest,
+  handleFriendRequest,
+  getAllFriendRequests,
 };
