@@ -69,10 +69,12 @@ const sendFriendRequest = async (senderId, receiverId) => {
           message: "Already friend",
         };
       }
-      return {
-        code: 0,
-        mesage: "Request was sended",
-      };
+      if (myFriendRequest[0].status === "PENDING") {
+        return {
+          code: 0,
+          mesage: "Request was sended",
+        };
+      }
     }
 
     const newFriendRequest = await FriendRequestModel.create({
@@ -102,16 +104,29 @@ const sendFriendRequest = async (senderId, receiverId) => {
 const addToFriendList = async (senderId, receiverId) => {
   const senderUser = await UserModel.get(senderId);
   const receiverUser = await UserModel.get(receiverId);
-  const res = await UserModel.update({
-    ID: senderId,
-    friendList: [...senderUser.friendList, receiverId],
-  });
-  console.log(res);
+  if (!senderUser.friendList) {
+    senderUser.friendList = [];
+  }
+  if (!receiverUser.friendList) {
+    receiverUser.friendList = [];
+  }
+  senderUser.friendList.push(receiverId);
+  receiverUser.friendList.push(senderId);
+  try {
+    await senderUser.save();
+    await receiverUser.save();
+    return {
+      message: "Add friend success",
+    };
+  } catch (e) {
+    console.log(e);
+    return e;
+  }
 };
 
 const handleFriendRequest = async (req, res) => {
   const { id, type } = req.body;
-  // type = ACCEPTED | DECLINED
+  // type = ACCEPTED | DENIED
   try {
     const friendRequest = await FriendRequestModel.scan({
       id,
@@ -119,13 +134,12 @@ const handleFriendRequest = async (req, res) => {
     }).exec();
 
     if (friendRequest.length > 0) {
-      // const updated = await FriendRequestModel.update({
-      //   id,
-      //   status: type,
-      // });
-      // console.log(updated);
+      const updated = await FriendRequestModel.update({
+        id,
+        status: type,
+      });
       if (type === "ACCEPTED") {
-        addToFriendList("84704462651", "84766785319");
+        addToFriendList(updated.senderId, updated.receiverId);
       }
       return res.status(200).json({
         code: 1,

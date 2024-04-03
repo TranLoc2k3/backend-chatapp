@@ -12,7 +12,10 @@ const schema = new dynamoose.Schema({
   phone: String,
   urlavatar: String,
   birthday: String,
-  friendList: Array,
+  friendList: {
+    type: Array,
+    schema: [String],
+  },
 });
 
 const User = dynamoose.model("User", schema);
