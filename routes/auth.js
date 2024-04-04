@@ -55,13 +55,16 @@ router.post("/sign-in", async (req, res) => {
   } else {
     bcrypt.compare(password, myUser.password, (err, res2) => {
       if (res2) {
-        res.status(200).json("Success");
+        res.status(200).json({
+          message: "Success",
+          data: myUser.phone,
+        });
       } else res.status(400).json("The password is incorrect");
     });
   }
 });
 
-//UI test 
+//UI test
 router.get("/form", (req, res) => {
   res.send(`
           <form action="/auth/update-info/0355887042" method="post" enctype="multipart/form-data">
@@ -120,16 +123,15 @@ router.post("/update-info/:id", upload.single("image"), (req, res) => {
         if (error) {
           console.error(error);
         } else {
-          res.status(201).json({ "message": "Update information successfully" })
+          res.status(201).json({ message: "Update information successfully" });
         }
       }
     );
   });
 });
 
-
 router.patch("/update-password", async (req, res) => {
   await UserController.updatePasswordByID(req, res);
-})
+});
 
 module.exports = router;
