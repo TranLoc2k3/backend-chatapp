@@ -5,6 +5,7 @@ const UserModel = require("../models/UserModel");
 const UserController = require("../controllers/userController");
 const multer = require("multer");
 const upload = multer();
+const { v4: uuidv4 } = require("uuid");
 
 const s3 = require("../configs/connectS3");
 
@@ -85,48 +86,41 @@ router.get("/form", (req, res) => {
       `);
 });
 
-router.post("/update-info/:id", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).send("No image Avatar uploaded.");
-  }
+router.post("/update-info/:id", upload.single("image"), async (req, res) => {
+  // if (!req.file) {
+  //   return res.status(400).send("No image Avatar uploaded.");
+  // }
   // const id = "0355887042";
+  let urlavatar = "";
   const id = req.params.id;
+  const { fullname, sex, birthday } = req.body;
+  if (req?.file) {
+    const params = {
+      // Thay the bucket cá nhân, tui để tạm cái bucket trên lớp
+      Bucket: process.env.BUCKET_NAME,
+      Key: `${id}_${uuidv4()}`,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    };
 
-  const params = {
-    // Thay the bucket cá nhân, tui để tạm cái bucket trên lớp
-    Bucket: process.env.BUCKET_NAME,
-    Key: "Avatar" + id,
-    Body: req.file.buffer,
-    ContentType: req.file.mimetype,
+    // Tải hình ảnh lên S3
+
+    urlavatar = (await s3.upload(params).promise()).Location;
+  }
+  const updateFields = {
+    fullname: fullname,
+    ismale: sex === "male" ? true : false,
+    birthday: birthday,
   };
-
-  // Tải hình ảnh lên S3
-  s3.upload(params, (err, data) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send("Error uploading image to S3.");
-      return;
+  if (urlavatar) updateFields.urlavatar = urlavatar;
+  UserModel.update({ ID: id }, updateFields, (error, user) => {
+    if (error) {
+      console.error(error);
+    } else {
+      res
+        .status(201)
+        .json({ message: "Update information successfully", data: user });
     }
-
-    const urlavatar = data.Location;
-    const { fullname, sex, birthday } = req.body;
-
-    UserModel.update(
-      { ID: id },
-      {
-        fullname: fullname,
-        ismale: sex === "male" ? true : false,
-        urlavatar: urlavatar,
-        birthday: birthday,
-      },
-      (error, user) => {
-        if (error) {
-          console.error(error);
-        } else {
-          res.status(201).json({ message: "Update information successfully" });
-        }
-      }
-    );
   });
 });
 
