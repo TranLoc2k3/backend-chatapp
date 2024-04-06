@@ -124,8 +124,13 @@ router.post("/update-info/:id", upload.single("image"), async (req, res) => {
   });
 });
 
-router.patch("/update-password", async (req, res) => {
-  await UserController.updatePasswordByID(req, res);
+router.patch("/reset-password", async (req, res) => {
+  await UserController.resetPasswordByID(req, res);
 });
+
+router.patch("/update-password", async(req, res) => {
+  await UserController.updatePasswordByID(req, res);
+})
+
 
 module.exports = router;
