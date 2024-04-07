@@ -132,5 +132,12 @@ router.patch("/update-password", async(req, res) => {
   await UserController.updatePasswordByID(req, res);
 })
 
+// Loc test
+const conversationController = require("../controllers/conversationController")
+router.get("/getConversation", async(req, res) => {
+  const {IDUser, lastEvaluatedKey} = req.body;
+  const data = await conversationController.getConversation(IDUser, lastEvaluatedKey);
+  res.json(data);
+})
 
 module.exports = router;
