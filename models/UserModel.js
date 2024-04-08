@@ -10,7 +10,7 @@ const schema = new dynamoose.Schema({
   fullname: String,
   ismale: Boolean,
   phone: String,
-  urlavatar: String,
+  urlavatar: String ,
   birthday: String,
   friendList: {
     type: Array,
@@ -19,4 +19,5 @@ const schema = new dynamoose.Schema({
 });
 
 const User = dynamoose.model("User", schema);
+
 module.exports = User;
