@@ -6,7 +6,7 @@ const { createServer } = require("node:http");
 const connectDB = require("./configs/connectDB");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
-
+const conversation = require("./routes/conversation");
 const port = 8080;
 
 const app = express();
@@ -23,6 +23,7 @@ connectDB();
 
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
+app.use("/conversation", conversation);
 
 io.on("connection", (socket) => {
   console.log("a user connected with id: ", socket.id);
