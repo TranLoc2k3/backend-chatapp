@@ -1,7 +1,7 @@
 const { sendFriendRequest } = require("./userController");
 const conversationController = require("../controllers/conversationController")
 const MessageDetailController = require("../controllers/MessageDetailController");
-
+const UserController = require("../controllers/userController");
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -53,20 +53,20 @@ const handleLoadConversation = (io, socket) => {
         return { ...conversation, MessageDetail };
       })
     );
-    res = listConversationWithDetails;
+
+    const listConversationDetails2 = await Promise.all(
+      listConversationWithDetails.map(async conversation => {
+        if (conversation.isGroup == false) {
+
+          let Receiver = await UserController.getUserByID({ body: { username: conversation.IDReceiver }});
+          Receiver = {ID: Receiver.ID, fullname: Receiver.fullname, urlavatar: Receiver.urlavatar};
+            return { ...conversation, Receiver};
+        }
+      })
+    );
+    res = listConversationDetails2;
+
     socket.emit("load_conversations_server", res);
-    // Tra về listIDConversation: array chưa IDConvertion (Tối đa 10 phần tử), 
-    // lastEvaluatedKey: để lưu phần tử cuối cùng, khi nào muốn load tiếp thì gửi lastEvaluatedKey lên
-    // res = {
-    //   "listIDConversation": [
-    //       "2024-04-06T17:26:32.788Za1ad9383-4c43-4ef5-a295-d90bab6bb34d"
-    //   ],
-    //   "lastEvaluatedKey": {
-    //       "IDSender": "123",
-    //       "lastChange": "2024-04-07T00:26:32.789",
-    //       "IDConversation": "2024-04-06T17:26:32.788Za1ad9383-4c43-4ef5-a295-d90bab6bb34d"
-    //   }
-    // }
   })
 }
 
