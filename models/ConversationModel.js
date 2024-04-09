@@ -19,6 +19,7 @@ const schema = new dynamoose.Schema({
     groupName: String,  
     groupAvatar: String,
     IDReceiver: String,
+    IDNewestMessage: String,
     groupMembers: {
         type: Array,
         schema: [String],
