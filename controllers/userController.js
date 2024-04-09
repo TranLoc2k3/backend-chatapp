@@ -186,8 +186,7 @@ const updatePasswordByID = async (req, res) => {
         bcrypt.compare(newPassword, myUser.password, (err, res3) => {
           if (res3) {
             res.json({ message: "Password is the same" });
-          }
-          else {
+          } else {
             bcrypt.hash(newPassword, 10).then(async (hash) => {
               myUser.password = hash;
               try {
@@ -199,10 +198,21 @@ const updatePasswordByID = async (req, res) => {
             });
           }
         });
-      }
-      else res.json({message: "Old password is incorrect"})
-    })
+      } else res.json({ message: "Old password is incorrect" });
+    });
   } else res.json({ message: "User not found" });
+};
+const getFriendListByID = async (req, res) => {
+  const userID = req.body.username;
+  const myUser = await UserModel.get(userID);
+
+  if (myUser) {
+      const friendDetails = await Promise.all(myUser.friendList.map(async (friendID) => {
+          const friend = await UserModel.get(friendID);
+          return friend;
+        }));
+        res.status(200).json(friendDetails);
+      } else res.json({message: "User not found"});
 };
 
 module.exports = {
@@ -213,5 +223,6 @@ module.exports = {
   sendFriendRequest,
   handleFriendRequest,
   getAllFriendRequests,
-  updatePasswordByID
+  updatePasswordByID,
+  getFriendListByID,
 };
