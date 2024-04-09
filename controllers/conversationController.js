@@ -1,8 +1,7 @@
 const docClient = require("../configs/AWS")
 const ConversationModel = require("../models/ConversationModel"); // Add missing import statement
 
-const getConversation = async (payload) => {
-    const { IDUser, lastEvaluatedKey } = payload;
+const getConversation = async (IDUser, lastEvaluatedKey) => {
     const params = {
         TableName: 'Conversation',
         IndexName: 'IDSender-lastChange-index',

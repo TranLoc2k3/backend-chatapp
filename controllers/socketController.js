@@ -1,5 +1,7 @@
 const { sendFriendRequest } = require("./userController");
 const conversationController = require("../controllers/conversationController")
+const MessageDetailController = require("../controllers/MessageDetailController");
+
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -42,8 +44,16 @@ const handleLoadConversation = (io, socket) => {
     const data = await conversationController.getConversation(IDUser, lastEvaluatedKey);
     const listIDConversation = data.Items?.map(item => item.IDConversation);
     const lastKey = data.LastEvaluatedKey;
-    const res = { listIDConversation: listIDConversation, lastEvaluatedKey: lastKey };
-
+    const listConversation = await Promise.all(listIDConversation.map(
+      IDConversation => conversationController.getConversationByID(IDConversation, IDUser)));
+    let res = listConversation;
+    const listConversationWithDetails = await Promise.all(
+      listConversation.map(async conversation => {
+        const MessageDetail = await MessageDetailController.getMessagesDetailByID(conversation.IDNewestMessage);
+        return { ...conversation, MessageDetail };
+      })
+    );
+    res = listConversationWithDetails;
     socket.emit("load_conversations_server", res);
     // Tra về listIDConversation: array chưa IDConvertion (Tối đa 10 phần tử), 
     // lastEvaluatedKey: để lưu phần tử cuối cùng, khi nào muốn load tiếp thì gửi lastEvaluatedKey lên
@@ -73,5 +83,5 @@ module.exports = {
   handleSendFriendRequest,
   handleUserOnline,
   handleLoadConversation,
-  handleTestSocket  
+  handleTestSocket
 };
