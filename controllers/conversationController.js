@@ -76,6 +76,7 @@ const getMessageDetailByIDConversation = async (req, res) => {
                 return data;
             })
         );
+        listMessageDetail.reverse();
         const result = {
             listMessageDetail: listMessageDetail,
             IDNextBucket: dataBucketMessage.IDNextBucket
