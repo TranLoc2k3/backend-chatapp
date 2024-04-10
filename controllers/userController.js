@@ -181,21 +181,6 @@ const updatePasswordByID = async (req, res) => {
 
   const myUser = await UserModel.get(userID);
   if (myUser) {
-    // bcrypt.compare(newPassword, myUser.password, (err, res2) => {
-    //   if (res2) {
-    //     res.json({ message: "Password is the same" });
-    //   } else {
-    //     bcrypt.hash(newPassword, 10).then(async (hash) => {
-    //       myUser.password = hash;
-    //       try {
-    //         const newUser = await myUser.save();
-    //         res.json({ message: "Update password success" });
-    //       } catch (error) {
-    //         res.json({ message: "Update password failed" });
-    //       }
-    //     });
-    //   }
-    // });
     bcrypt.compare(oldPassword, myUser.password, (err, res2) => {
       if (res2) {
         bcrypt.compare(newPassword, myUser.password, (err, res3) => {
@@ -215,6 +200,20 @@ const updatePasswordByID = async (req, res) => {
         });
       } else res.json({ message: "Old password is incorrect" });
     });
+  } else res.json({ message: "User not found" });
+};
+const getFriendListByID = async (req, res) => {
+  const userID = req.body.username;
+  const myUser = await UserModel.get(userID);
+
+  if (myUser) {
+    const friendDetails = await Promise.all(
+      myUser.friendList.map(async (friendID) => {
+        const friend = await UserModel.get(friendID);
+        return friend;
+      })
+    );
+    res.status(200).json(friendDetails);
   } else res.json({ message: "User not found" });
 };
 
