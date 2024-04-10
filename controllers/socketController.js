@@ -1,9 +1,9 @@
 const { sendFriendRequest } = require("./userController");
-const conversationController = require("../controllers/conversationController")
+const conversationController = require("../controllers/conversationController");
 const MessageDetailController = require("../controllers/MessageDetailController");
 const UserController = require("../controllers/userController");
 const BucketMessageController = require("../controllers/BucketMessageController");
-const { v4: uuidv4 } = require("uuid")
+const { v4: uuidv4 } = require("uuid");
 const MessageController = require("../controllers/MessageController");
 const moment = require("moment-timezone");
 let onlineUsers = [];
@@ -45,40 +45,51 @@ const handleSendFriendRequest = (io, socket) => {
 const handleLoadConversation = (io, socket) => {
   socket.on("load_conversations", async (payload) => {
     const { IDUser, lastEvaluatedKey } = payload;
-    const data = await conversationController.getConversation(IDUser, lastEvaluatedKey);
-    if (!data.Items) return;
-    const listIDConversation = data.Items?.map(item => item.IDConversation);
+    const data = await conversationController.getConversation(
+      IDUser,
+      lastEvaluatedKey
+    );
+    const listIDConversation = data.Items?.map((item) => item.IDConversation);
     const lastKey = data.LastEvaluatedKey;
-    const listConversation = await Promise.all(listIDConversation.map(
-      IDConversation => conversationController.getConversationByID(IDConversation, IDUser)));
+    const listConversation = await Promise.all(
+      listIDConversation.map((IDConversation) =>
+        conversationController.getConversationByID(IDConversation, IDUser)
+      )
+    );
     let res = listConversation;
     const listConversationWithDetails = await Promise.all(
-      listConversation.map(async conversation => {
+      listConversation.map(async (conversation) => {
         if (!conversation.IDNewestMessage) {
           return conversation;
         }
-        const MessageDetail = await MessageDetailController.getMessagesDetailByID(conversation.IDNewestMessage);
+        const MessageDetail =
+          await MessageDetailController.getMessagesDetailByID(
+            conversation.IDNewestMessage
+          );
         return { ...conversation, MessageDetail };
       })
     );
 
     const listConversationDetails2 = await Promise.all(
-      listConversationWithDetails.map(async conversation => {
+      listConversationWithDetails.map(async (conversation) => {
         if (conversation.isGroup == false) {
-
-          let Receiver = await UserController.getUserByID({ body: { username: conversation.IDReceiver }});
-          Receiver = {ID: Receiver.ID, fullname: Receiver.fullname, urlavatar: Receiver.urlavatar};
-            return { ...conversation, Receiver};
+          let Receiver = await UserController.getUserByID({
+            body: { username: conversation.IDReceiver },
+          });
+          Receiver = {
+            ID: Receiver.ID,
+            fullname: Receiver.fullname,
+            urlavatar: Receiver.urlavatar,
+          };
+          return { ...conversation, Receiver };
         }
       })
     );
     res = listConversationDetails2;
 
     socket.emit("load_conversations_server", res);
-  })
-}
-
-
+  });
+};
 
 const handleSendMessage = async (io, socket) => {
   socket.on("send_message", async (payload) => {
@@ -86,12 +97,20 @@ const handleSendMessage = async (io, socket) => {
     //   IDSender: IDSender,
     //   IDConversation: IDConversation,
     //   textMessage: textMessage (Chuoi tin nhăn)
-
     // }
     const textmessage = await handleTextMessage(io, socket, payload);
-    const dataMessage = await MessageController.getMessagesByIDConversation(payload.IDConversation);
-    const dataBucket = await updateBucketMessage(dataMessage.IDNewestBucket, textmessage.IDMessageDetail);
-    const dataConversation = await conversationController.getConversationByID(payload.IDConversation, payload.IDSender);
+    const dataMessage = await MessageController.getMessagesByIDConversation(
+      payload.IDConversation
+    );
+    const dataBucket = await updateBucketMessage(
+      dataMessage.IDNewestBucket,
+      textmessage.IDMessageDetail
+    );
+    console.log(payload.IDConversation, payload.IDSender);
+    const dataConversation = await conversationController.getConversationByID(
+      payload.IDConversation,
+      payload.IDSender
+    );
 
     if (dataMessage.IDNewestBucket !== dataBucket.IDBucketMessage) {
       dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
@@ -108,40 +127,56 @@ const handleSendMessage = async (io, socket) => {
     updateLastChangeConversation(payload.IDConversation, payload.IDSender);
     updateLastChangeConversation(payload.IDConversation, IDReceiver);
   });
-}
+};
 
 const updateLastChangeConversation = async (IDConversation, IDSender) => {
-  const dataConversation = await conversationController.getConversationByID(IDConversation, IDSender);
-  dataConversation.lastChange = moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS');
-  const updateConversation = await conversationController.updateConversation(dataConversation);
+  const dataConversation = await conversationController.getConversationByID(
+    IDConversation,
+    IDSender
+  );
+  dataConversation.lastChange = moment
+    .tz("Asia/Ho_Chi_Minh")
+    .format("YYYY-MM-DDTHH:mm:ss.SSS");
+  const updateConversation = await conversationController.updateConversation(
+    dataConversation
+  );
   return updateConversation;
-}
+};
 
-const updateBucketMessage = async(IDBucketMessage, IDMessageDetail) => {
-  const bucket = await BucketMessageController.getBucketMessageByID(IDBucketMessage);
+const updateBucketMessage = async (IDBucketMessage, IDMessageDetail) => {
+  const bucket = await BucketMessageController.getBucketMessageByID(
+    IDBucketMessage
+  );
   const listIDMessageDetail = bucket.listIDMessageDetail;
-  if (listIDMessageDetail.length  >= 35) {
+  if (listIDMessageDetail.length >= 35) {
     let dataBucket = {
       IDBucketMessage: uuidv4(),
       listIDMessageDetail: [IDMessageDetail],
-      IDNextBucket: bucket.IDBucketMessage
-    }
+      IDNextBucket: bucket.IDBucketMessage,
+    };
 
-    const newBucket = await BucketMessageController.createBucketMessage(dataBucket);
-    return newBucket;  
-  }
-  else {
+    const newBucket = await BucketMessageController.createBucketMessage(
+      dataBucket
+    );
+    return newBucket;
+  } else {
     bucket.listIDMessageDetail.push(IDMessageDetail);
-    const updateBucket = await BucketMessageController.updateBucketMessage(bucket);
+    const updateBucket = await BucketMessageController.updateBucketMessage(
+      bucket
+    );
     return updateBucket;
   }
-}
+};
 
 const handleTextMessage = async (io, socket, payload) => {
-  const {IDSender, IDConversation, textMessage} = payload;
-  const message = await MessageDetailController.createTextMessageDetail(IDSender, IDConversation, textMessage);
+  const { IDSender, IDConversation, textMessage } = payload;
+  const message = await MessageDetailController.createTextMessageDetail(
+    IDSender,
+    IDConversation,
+    textMessage
+  );
   return message;
-}
+};
 
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = (io, socket) => {
@@ -150,12 +185,12 @@ const handleTestSocket = (io, socket) => {
     // const data = await conversationController.getMessageDetailByIDConversation({body: {IDConversation: "8b6e5b23-298e-4c32-89df-3d65f112ad59"}});
     // console.log(data);
   });
-}
+};
 
 module.exports = {
   handleSendFriendRequest,
   handleUserOnline,
   handleLoadConversation,
   handleTestSocket,
-  handleSendMessage
+  handleSendMessage,
 };
