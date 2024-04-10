@@ -1,5 +1,8 @@
 const docClient = require("../configs/AWS")
 const ConversationModel = require("../models/ConversationModel"); // Add missing import statement
+const MessageController = require("./MessageController");
+const MessageDetailController = require("./MessageDetailController");
+const BucketMessageController = require("./BucketMessageController");
 const { v4: uuidv4 } = require('uuid');
 
 const getConversation = async (IDUser, lastEvaluatedKey) => {
@@ -44,9 +47,48 @@ const createNewSignleConversation = async (IDSender, IDReceiver, IDConversation)
     return conversation;
 }
 
+const updateConversation = async (conversation) => {
+    await conversation.save();
+    return conversation;
+}
+
+const getMessageDetailByIDConversation = async (req, res) => {
+    // const IDConversation = req.body.IDConversation;
+    // Truyen IDNextBucket để load tin nhắn tiếp theo, có thể không truyền trong lần đầu, chỉ cần truyền IDConversation
+    const {IDConversation, IDNextBucket} = req.body;
+    let listIDMessageDetail, dataBucketMessage;
+
+    if (IDNextBucket) {
+        dataBucketMessage = await BucketMessageController.getBucketMessageByID(IDNextBucket);
+        listIDMessageDetail = dataBucketMessage.listIDMessageDetail;
+    }
+    else {
+        const dataMessage = await MessageController.getMessageByID(IDConversation);
+        const IDBucketMessage = dataMessage.IDNewestBucket;
+        dataBucketMessage = await BucketMessageController.getBucketMessageByID(IDBucketMessage);
+        listIDMessageDetail = dataBucketMessage.listIDMessageDetail;
+    }
+    
+    if (listIDMessageDetail) {
+        const listMessageDetail = await Promise.all(
+            listIDMessageDetail.map(async IDMessageDetail => {
+                const data = await MessageDetailController.getMessagesDetailByID(IDMessageDetail);
+                return data;
+            })
+        );
+        const result = {
+            listMessageDetail: listMessageDetail,
+            IDNextBucket: dataBucketMessage.IDNextBucket
+        }
+        return res.status(200).json(result)
+    }
+    return res.status(200).json({message: "No message detail"});
+}
 
 module.exports = {
     getConversation,
     getConversationByID,
-    createNewSignleConversation
+    createNewSignleConversation,
+    updateConversation,
+    getMessageDetailByIDConversation
 };
