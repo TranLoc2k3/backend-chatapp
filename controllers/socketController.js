@@ -49,6 +49,9 @@ const handleLoadConversation = (io, socket) => {
     let res = listConversation;
     const listConversationWithDetails = await Promise.all(
       listConversation.map(async conversation => {
+        if (!conversation.IDNewestMessage) {
+          return conversation;
+        }
         const MessageDetail = await MessageDetailController.getMessagesDetailByID(conversation.IDNewestMessage);
         return { ...conversation, MessageDetail };
       })

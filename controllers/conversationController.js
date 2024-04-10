@@ -1,5 +1,6 @@
 const docClient = require("../configs/AWS")
 const ConversationModel = require("../models/ConversationModel"); // Add missing import statement
+const { v4: uuidv4 } = require('uuid');
 
 const getConversation = async (IDUser, lastEvaluatedKey) => {
     const params = {
@@ -31,7 +32,21 @@ const getConversationByID = async (IDConversation, IDSender) => {
     return data;
 };
 
+
+const createNewSignleConversation = async (IDSender, IDReceiver, IDConversation) => {
+    const conversation = new ConversationModel({
+        IDConversation: IDConversation ? IDConversation : uuidv4(),
+        IDSender: IDSender,
+        IDReceiver: IDReceiver,
+        isGroup: false,
+    });
+    await conversation.save();
+    return conversation;
+}
+
+
 module.exports = {
     getConversation,
-    getConversationByID
+    getConversationByID,
+    createNewSignleConversation
 };
