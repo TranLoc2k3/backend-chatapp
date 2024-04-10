@@ -226,4 +226,5 @@ module.exports = {
   handleFriendRequest,
   getAllFriendRequests,
   updatePasswordByID,
+  getFriendListByID,
 };
