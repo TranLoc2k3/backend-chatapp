@@ -2,6 +2,10 @@ const { sendFriendRequest } = require("./userController");
 const conversationController = require("../controllers/conversationController")
 const MessageDetailController = require("../controllers/MessageDetailController");
 const UserController = require("../controllers/userController");
+const BucketMessageController = require("../controllers/BucketMessageController");
+const { v4: uuidv4 } = require("uuid")
+const MessageController = require("../controllers/MessageController");
+const moment = require("moment-timezone");
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -73,18 +77,84 @@ const handleLoadConversation = (io, socket) => {
   })
 }
 
-// Hàm này để test các method của các controller bằng socket
-const handleTestSocket = (io, socket) => {
-  socket.on("test_socket", async (payload) => {
-    const data = await MessageDetailController.getMessagesDetailByID(payload);
-    console.log(data);
+
+
+const handleSendMessage = async (io, socket) => {
+  socket.on("send_message", async (payload) => {
+    // payload = {
+    //   IDSender: IDSender,
+    //   IDConversation: IDConversation,
+    //   textMessage: textMessage (Chuoi tin nhăn)
+
+    // }
+    const textmessage = await handleTextMessage(io, socket, payload);
+    const dataMessage = await MessageController.getMessagesByIDConversation(payload.IDConversation);
+    const dataBucket = await updateBucketMessage(dataMessage.IDNewestBucket, textmessage.IDMessageDetail);
+    const dataConversation = await conversationController.getConversationByID(payload.IDConversation, payload.IDSender);
+
+    if (dataMessage.IDNewestBucket !== dataBucket.IDBucketMessage) {
+      dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
+      const updateMessage = await MessageController.updateMessage(dataMessage);
+    }
+
+    socket.emit("receive_message", textmessage);
+    const IDReceiver = dataConversation.IDReceiver;
+    const user = getUser(IDReceiver);
+    if (user?.socketId) {
+      io.to(user.socketId).emit("receive_message", textmessage);
+    }
+
+    updateLastChangeConversation(payload.IDConversation, payload.IDSender);
+    updateLastChangeConversation(payload.IDConversation, IDReceiver);
   });
 }
 
+const updateLastChangeConversation = async (IDConversation, IDSender) => {
+  const dataConversation = await conversationController.getConversationByID(IDConversation, IDSender);
+  dataConversation.lastChange = moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS');
+  const updateConversation = await conversationController.updateConversation(dataConversation);
+  return updateConversation;
+}
+
+const updateBucketMessage = async(IDBucketMessage, IDMessageDetail) => {
+  const bucket = await BucketMessageController.getBucketMessageByID(IDBucketMessage);
+  const listIDMessageDetail = bucket.listIDMessageDetail;
+  if (listIDMessageDetail.length  >= 35) {
+    let dataBucket = {
+      IDBucketMessage: uuidv4(),
+      listIDMessageDetail: [IDMessageDetail],
+      IDNextBucket: bucket.IDBucketMessage
+    }
+
+    const newBucket = await BucketMessageController.createBucketMessage(dataBucket);
+    return newBucket;  
+  }
+  else {
+    bucket.listIDMessageDetail.push(IDMessageDetail);
+    const updateBucket = await BucketMessageController.updateBucketMessage(bucket);
+    return updateBucket;
+  }
+}
+
+const handleTextMessage = async (io, socket, payload) => {
+  const {IDSender, IDConversation, textMessage} = payload;
+  const message = await MessageDetailController.createTextMessageDetail(IDSender, IDConversation, textMessage);
+  return message;
+}
+
+// Hàm này để test các method của các controller bằng socket
+const handleTestSocket = (io, socket) => {
+  socket.on("test_socket", async (payload) => {
+    // const conversationController = require("../controllers/conversationController");
+    // const data = await conversationController.getMessageDetailByIDConversation({body: {IDConversation: "8b6e5b23-298e-4c32-89df-3d65f112ad59"}});
+    // console.log(data);
+  });
+}
 
 module.exports = {
   handleSendFriendRequest,
   handleUserOnline,
   handleLoadConversation,
-  handleTestSocket
+  handleTestSocket,
+  handleSendMessage
 };
