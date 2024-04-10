@@ -46,6 +46,7 @@ const handleLoadConversation = (io, socket) => {
   socket.on("load_conversations", async (payload) => {
     const { IDUser, lastEvaluatedKey } = payload;
     const data = await conversationController.getConversation(IDUser, lastEvaluatedKey);
+    if (!data.Items) return;
     const listIDConversation = data.Items?.map(item => item.IDConversation);
     const lastKey = data.LastEvaluatedKey;
     const listConversation = await Promise.all(listIDConversation.map(
