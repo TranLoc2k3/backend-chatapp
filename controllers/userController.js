@@ -207,12 +207,14 @@ const getFriendListByID = async (req, res) => {
   const myUser = await UserModel.get(userID);
 
   if (myUser) {
-      const friendDetails = await Promise.all(myUser.friendList.map(async (friendID) => {
-          const friend = await UserModel.get(friendID);
-          return friend;
-        }));
-        res.status(200).json(friendDetails);
-      } else res.json({message: "User not found"});
+    const friendDetails = await Promise.all(
+      myUser.friendList.map(async (friendID) => {
+        const friend = await UserModel.get(friendID);
+        return friend;
+      })
+    );
+    res.status(200).json(friendDetails);
+  } else res.json({ message: "User not found" });
 };
 
 module.exports = {
