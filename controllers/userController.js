@@ -1,6 +1,7 @@
 const UserModel = require("../models/UserModel");
 const FriendRequestModel = require("../models/FriendRequestModel");
 const bcrypt = require("bcrypt");
+const conversationController = require("./conversationController");
 const getAllUser = async (req, res) => {
   try {
     const data = await UserModel.scan().exec();
@@ -140,6 +141,10 @@ const handleFriendRequest = async (req, res) => {
       });
       if (type === "ACCEPTED") {
         addToFriendList(updated.senderId, updated.receiverId);
+        
+        const data = await conversationController.createNewSignleConversation(updated.senderId, updated.receiverId);
+        const data2 = await conversationController.createNewSignleConversation(updated.receiverId, updated.senderId, data.IDConversation);
+        
       }
       return res.status(200).json({
         code: 1,
