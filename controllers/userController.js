@@ -201,8 +201,7 @@ const updatePasswordByID = async (req, res) => {
         bcrypt.compare(newPassword, myUser.password, (err, res3) => {
           if (res3) {
             res.json({ message: "Password is the same" });
-          }
-          else {
+          } else {
             bcrypt.hash(newPassword, 10).then(async (hash) => {
               myUser.password = hash;
               try {
@@ -214,9 +213,8 @@ const updatePasswordByID = async (req, res) => {
             });
           }
         });
-      }
-      else res.json({message: "Old password is incorrect"})
-    })
+      } else res.json({ message: "Old password is incorrect" });
+    });
   } else res.json({ message: "User not found" });
 };
 
@@ -228,5 +226,5 @@ module.exports = {
   sendFriendRequest,
   handleFriendRequest,
   getAllFriendRequests,
-  updatePasswordByID
+  updatePasswordByID,
 };
