@@ -45,9 +45,35 @@ const createNewFileMessage = async (IDSender, IDConversation, image) => {
   return newMessageDetail;
 };
 
+const createNewVideoMessage = async (IDSender, IDConversation, video) => {
+  const data = {
+    IDMessageDetail: uuidv4(),
+    IDSender: IDSender,
+    type: "video",
+    content: video,
+    isRemove: false,
+  };
+  const newMessageDetail = MessageDetailModel.create(data);
+  return newMessageDetail;
+};
+
+const handleLinkMessage = async (IDSender, IDConversation, link) => {
+  const data = {
+    IDMessageDetail: uuidv4(),
+    IDSender: IDSender,
+    type: "link",
+    content: link,
+    isRemove: false,
+  };
+  const newMessageDetail = MessageDetailModel.create(data);
+  return newMessageDetail;
+};
+
 module.exports = {
   getMessagesDetailByID,
   createTextMessageDetail,
   createNewImageMessage,
   createNewFileMessage,
+  createNewVideoMessage,
+  handleLinkMessage,
 };

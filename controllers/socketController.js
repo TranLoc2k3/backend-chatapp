@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require("uuid");
 const MessageController = require("../controllers/MessageController");
 const moment = require("moment-timezone");
 const s3 = require("../configs/connectS3");
-const utils = require("../utils/detectFileExtension");
+const URL = require("url").URL;
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -129,18 +129,57 @@ const handleSendMessage = async (io, socket) => {
       payload.IDConversation
     );
 
+    //Chat Video
+    const listVideo = payload.video || [];
+    listVideo.forEach(async (video) => {
+      const params = {
+        Bucket: "videotintin",
+        Key: uuidv4(),
+        Body: video,
+      };
+
+      try {
+        const data = await s3.upload(params).promise();
+        const videoMessage =
+          await MessageDetailController.createNewVideoMessage(
+            payload.IDSender,
+            payload.IDConversation,
+            data.Location
+          );
+        const dataBucket = await updateBucketMessage(
+          dataMessage.IDNewestBucket,
+          videoMessage.IDMessageDetail
+        );
+        if (dataMessage.IDNewestBucket !== dataBucket.IDBucketMessage) {
+          dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
+          const updateMessage = await MessageController.updateMessage(
+            dataMessage
+          );
+        }
+
+        socket.emit("receive_message", videoMessage);
+        const IDReceiver = dataConversation.IDReceiver;
+        const user = getUser(IDReceiver);
+        if (user?.socketId) {
+          io.to(user.socketId).emit("receive_message", videoMessage);
+        }
+
+        updateLastChangeConversation(payload.IDConversation, payload.IDSender);
+        updateLastChangeConversation(payload.IDConversation, IDReceiver);
+      } catch (error) {
+        console.error(error);
+      }
+    });
+
     // Chat Image
-    const listImage = payload.image;
+    const listImage = payload.image || [];
     listImage.forEach(async (image) => {
       //Save to db
-      // console.log(payload.IDSender, payload.IDConversation, image);
       const dataImageMessage = await handleImageMessage(
         payload.IDSender,
         payload.IDConversation,
         image
       );
-      // console.log(handleImageMessage());
-      console.log(dataImageMessage);
       //Update bucket
       const dataBucket = await updateBucketMessage(
         dataMessage.IDNewestBucket,
@@ -204,41 +243,66 @@ const handleSendMessage = async (io, socket) => {
       updateLastChangeConversation(payload.IDConversation, IDReceiver);
     }
 
-    //Chat Video
-
     // Chat text
-    // payload = {
-    //   IDSender: IDSender,
-    //   IDConversation: IDConversation,
-    //   textMessage: textMessage (Chuoi tin nhăn)
-
-    // }
     if (!payload.textMessage) return;
-    const textmessage = await handleTextMessage(
-      io,
-      socket,
-      payload.IDSender,
-      payload.IDConversation,
-      payload.textMessage
-    );
-    const dataBucket = await updateBucketMessage(
-      dataMessage.IDNewestBucket,
-      textmessage.IDMessageDetail
-    );
-    if (dataMessage.IDNewestBucket !== dataBucket.IDBucketMessage) {
-      dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
-      const updateMessage = await MessageController.updateMessage(dataMessage);
-    }
+    else {
+      //Chat link
+      if (stringIsAValidUrl(payload.textMessage)) {
+        const linkmessage = await MessageDetailController.handleLinkMessage(
+          payload.IDSender,
+          payload.IDConversation,
+          payload.textMessage
+        );
+        const dataBucket = await updateBucketMessage(
+          dataMessage.IDNewestBucket,
+          linkmessage.IDMessageDetail
+        );
 
-    socket.emit("receive_message", textmessage);
-    const IDReceiver = dataConversation.IDReceiver;
-    const user = getUser(IDReceiver);
-    if (user?.socketId) {
-      io.to(user.socketId).emit("receive_message", textmessage);
-    }
+        if (dataMessage.IDNewestBucket !== dataBucket.IDBucketMessage) {
+          dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
+          const updateMessage = await MessageController.updateMessage(
+            dataMessage
+          );
+        }
 
-    updateLastChangeConversation(payload.IDConversation, payload.IDSender);
-    updateLastChangeConversation(payload.IDConversation, IDReceiver);
+        socket.emit("receive_message", linkmessage);
+        const IDReceiver = dataConversation.IDReceiver;
+        const user = getUser(IDReceiver);
+        if (user?.socketId) {
+          io.to(user.socketId).emit("receive_message", linkmessage);
+        }
+
+        updateLastChangeConversation(payload.IDConversation, payload.IDSender);
+        updateLastChangeConversation(payload.IDConversation, IDReceiver);
+        return;
+      }
+      const textmessage = await handleTextMessage(
+        payload.IDSender,
+        payload.IDConversation,
+        payload.textMessage
+      );
+      const dataBucket = await updateBucketMessage(
+        dataMessage.IDNewestBucket,
+        textmessage.IDMessageDetail
+      );
+
+      if (dataMessage.IDNewestBucket !== dataBucket.IDBucketMessage) {
+        dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
+        const updateMessage = await MessageController.updateMessage(
+          dataMessage
+        );
+      }
+
+      socket.emit("receive_message", textmessage);
+      const IDReceiver = dataConversation.IDReceiver;
+      const user = getUser(IDReceiver);
+      if (user?.socketId) {
+        io.to(user.socketId).emit("receive_message", textmessage);
+      }
+
+      updateLastChangeConversation(payload.IDConversation, payload.IDSender);
+      updateLastChangeConversation(payload.IDConversation, IDReceiver);
+    }
   });
 };
 
@@ -281,13 +345,7 @@ const updateBucketMessage = async (IDBucketMessage, IDMessageDetail) => {
   }
 };
 
-const handleTextMessage = async (
-  io,
-  socket,
-  IDSender,
-  IDConversation,
-  textMessage
-) => {
+const handleTextMessage = async (IDSender, IDConversation, textMessage) => {
   // const { IDSender, IDConversation, textMessage } = payload;
   const message = await MessageDetailController.createTextMessageDetail(
     IDSender,
@@ -320,47 +378,33 @@ const handleImageMessage = async (IDSender, IDConversation, image) => {
   }
 };
 
+// Hàm này để kiểm tra xem string có phải là URL không
+const stringIsAValidUrl = (s) => {
+  try {
+    new URL(s);
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
+
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = (io, socket) => {
+  const s3 = require("../configs/connectS3");
+  let videoChunks = [];
   socket.on("test_socket", async (payload) => {
-    // const payload = {
-    //   image,
-    //   video,
-    // }
-    // socket.emit("test_socket", payload);
-    // socket.on("test_socket_server", (data) => {
-    //   console.log(data);
-    // });
-    // const s3 = require("../configs/connectS3");
-    // const { v4: uuidv4 } = require("uuid");
-    // const listImage = payload.image;
-    // const videos = payload.video;
-    // videos.forEach(async video => {
-    //   const params = {
-    //     Bucket: 'imagetintin',
-    //     Key: uuidv4(),
-    //     Body: video
-    //   }
-    //   s3.upload(params, (err, data) => {
-    //     if (err) {
-    //       console.error(err);
-    //     }
-    //     console.log(`File uploaded successfully at ${data.Location}`);
-    //   });
-    // });
-    // listImage.forEach(async (image) => {
-    //   const params = {
-    //     Bucket: 'imagetintin',
-    //     Key: uuidv4(),
-    //     Body: image
-    //   }
-    //   try {
-    //     const data = await s3.upload(params).promise();
-    //     console.log(`File uploaded successfully at ${data.Location}`);
-    //   } catch (error) {
-    //     console.error(error);
-    //   }
-    // });
+    console.log(payload);
+    const string = payload.string;
+    console.log(string);
+
+    const stringIsAValidUrl = (s) => {
+      try {
+        new URL(s);
+        return true;
+      } catch (err) {
+        return false;
+      }
+    };
   });
 };
 
