@@ -17,7 +17,20 @@ const createTextMessageDetail = async (IDSender, IDConversation, textMessage) =>
     return newMessageDetail;
 }
 
+const createNewImageMessage = async (IDSender, IDConversation, image) => {
+    const data = {
+        IDMessageDetail: uuidv4(),
+        IDSender: IDSender,
+        type: 'image',
+        content: image,
+        isRemove: false
+    }
+    const newMessageDetail = MessageDetailModel.create(data);
+    return newMessageDetail;
+}
+
 module.exports = {
     getMessagesDetailByID,
-    createTextMessageDetail
+    createTextMessageDetail,
+    createNewImageMessage
 };
