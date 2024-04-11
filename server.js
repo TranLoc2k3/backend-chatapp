@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 const conversation = require("./routes/conversation");
 const friendRequest = require("./routes/friendRequest");
+const message = require("./routes/message");
 const port = 8080;
 
 const app = express();
@@ -26,6 +27,7 @@ app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 app.use("/conversation", conversation);
 app.use("/friend-request", friendRequest);
+app.use("/message", message);
 
 io.on("connection", (socket) => {
   console.log("a user connected with id: ", socket.id);
@@ -34,6 +36,7 @@ io.on("connection", (socket) => {
   socketController.handleSendFriendRequest(io, socket);
   socketController.handleLoadConversation(io, socket);
   socketController.handleSendMessage(io, socket);
+  socketController.handleChangeStateMessage(io, socket);
   socketController.handleTestSocket(io, socket);
 });
 

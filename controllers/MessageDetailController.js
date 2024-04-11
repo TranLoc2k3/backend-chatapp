@@ -5,6 +5,17 @@ const getMessagesDetailByID = async (IDMessageDetail) => {
   return data;
 };
 
+const removeMessageDetail = async (req, res) => {
+  const { IDMessageDetail } = req.body;
+  const data = await MessageDetailModel.get(IDMessageDetail);
+  if (data) {
+    data.isRemove = false;
+    const newData = await MessageDetailModel.update(data);
+    return res.json(newData);
+  }
+  return res.json({ message: "Message not found" });  
+}
+
 const createTextMessageDetail = async (
   IDSender,
   IDConversation,
@@ -76,4 +87,5 @@ module.exports = {
   createNewFileMessage,
   createNewVideoMessage,
   handleLinkMessage,
+  removeMessageDetail
 };
