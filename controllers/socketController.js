@@ -120,7 +120,16 @@ const handleSendFile = async (IDSender, IDConversation, file) => {
 
 const handleSendMessage = async (io, socket) => {
   socket.on("send_message", async (payload) => {
-    console.log(payload);
+    // Check có bao nhiêu sending message đang gửi
+    socket.emit("sending_message", () => {
+      return payload.textMessage
+        ? payload.image.length +
+            payload.fileList.length +
+            payload.video.length +
+            1
+        : payload.image.length + payload.fileList.length + payload.video.length;
+    });
+
     let dataConversation = await conversationController.getConversationByID(
       payload.IDConversation,
       payload.IDSender
