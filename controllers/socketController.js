@@ -146,7 +146,6 @@ const handleSendMessage = async (io, socket) => {
         Key: uuidv4(),
         Body: video,
       };
-
       try {
         const data = await s3.upload(params).promise();
         const videoMessage =
@@ -365,7 +364,13 @@ const handleTextMessage = async (IDSender, IDConversation, textMessage) => {
 };
 
 const handleImageMessage = async (IDSender, IDConversation, image) => {
-  console.log("Image", image);
+  if (image instanceof Buffer) {
+  } else {
+    image = Buffer.from(
+      image.replace(/^data:image\/\w+;base64,/, ""),
+      "base64"
+    );
+  }
   const params = {
     Bucket: "imagetintin",
     Key: uuidv4(),
