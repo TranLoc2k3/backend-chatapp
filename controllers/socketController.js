@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require("uuid")
 const MessageController = require("../controllers/MessageController");
 const moment = require("moment-timezone");
 const s3 = require("../configs/connectS3");
+const URL = require('url').URL;
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -148,6 +149,27 @@ const handleSendMessage = async (io, socket) => {
     // Chat text
     if (!payload.textMessage) return;
     else {
+      //Chat link
+      if (stringIsAValidUrl(payload.textMessage)) {
+        const linkmessage = await MessageDetailController.handleLinkMessage(payload.IDSender, payload.IDConversation, payload.textMessage);
+        const dataBucket = await updateBucketMessage(dataMessage.IDNewestBucket, linkmessage.IDMessageDetail);
+
+        if (dataMessage.IDNewestBucket !== dataBucket.IDBucketMessage) {
+          dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
+          const updateMessage = await MessageController.updateMessage(dataMessage);
+        }
+
+        socket.emit("receive_message", linkmessage);
+        const IDReceiver = dataConversation.IDReceiver;
+        const user = getUser(IDReceiver);
+        if (user?.socketId) {
+          io.to(user.socketId).emit("receive_message", linkmessage);
+        }
+
+        updateLastChangeConversation(payload.IDConversation, payload.IDSender);
+        updateLastChangeConversation(payload.IDConversation, IDReceiver);
+        return;
+      }
       const textmessage = await handleTextMessage(payload.IDSender, payload.IDConversation, payload.textMessage);
       const dataBucket = await updateBucketMessage(dataMessage.IDNewestBucket, textmessage.IDMessageDetail);
 
@@ -221,53 +243,36 @@ const handleImageMessage = async (IDSender, IDConversation, image) => {
   }
 };
 
+// Hàm này để kiểm tra xem string có phải là URL không
+const stringIsAValidUrl = (s) => {
+  try {
+    new URL(s);
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
+
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = (io, socket) => {
   const s3 = require("../configs/connectS3");
   let videoChunks = [];
   socket.on("test_socket", async (payload) => {
-    const videos = payload.videos || [];
-    videos.forEach(async video => {
-      const params = {
-        Bucket: 'videotintin',
-        Key: uuidv4(),
-        Body: video
+    console.log(payload)
+    const string = payload.string;
+    console.log(string)
+    
+
+    const stringIsAValidUrl = (s) => {
+      try {
+        new URL(s);
+        return true;
+      } catch (err) {
+        return false;
       }
-      s3.upload(params, (err, data) => {
-        if (err) {
-          console.error(err);
-        } else {
-          console.log(data.Location);
-        }
-      })
-    })
+    };
 
-    // if (!videoChunks[payload.videoIndex]) {
-    //   videoChunks[payload.videoIndex] = [];
-    // }
 
-    // videoChunks[payload.videoIndex][payload.index] = payload.video; // Save video chunk at correct index
-
-    // if (payload.isLast) {
-    //   const video = Buffer.concat(videoChunks[payload.videoIndex]); // Reassemble video
-    //   const params = {
-    //     Bucket: 'videotintin',
-    //     Key: uuidv4(),
-    //     Body: video
-    //   }
-    //   // const data = await s3.upload(params).promise();
-    //   // console.log(data.Location)
-    //   s3.upload(params, (err, data) => {
-    //     if (err) {
-    //       console.error(err);
-    //     } else {
-    //       console.log(data.Location);
-    //     }
-    //   })
-
-    //   videoChunks[payload.videoIndex] = []; // Clear array for next video
-    //   // Now you can process the video...
-    // }
   })
 }
 
