@@ -13,8 +13,8 @@ const removeMessageDetail = async (req, res) => {
     const newData = await MessageDetailModel.update(data);
     return res.json(newData);
   }
-  return res.json({ message: "Message not found" });  
-}
+  return res.json({ message: "Message not found" });
+};
 
 const createTextMessageDetail = async (
   IDSender,
@@ -87,5 +87,5 @@ module.exports = {
   createNewFileMessage,
   createNewVideoMessage,
   handleLinkMessage,
-  removeMessageDetail
+  removeMessageDetail,
 };
