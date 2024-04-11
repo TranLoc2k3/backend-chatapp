@@ -47,13 +47,16 @@ const handleSendFriendRequest = (io, socket) => {
 
 const handleChangeStateMessage = async (io, socket) => {
   socket.on("recallMessage", async (payload) => {
-    const { IDMessageDetail } = payload;
+    const { IDMessageDetail, IDReceiver } = payload;
     const message = await MessageDetailController.getMessagesDetailByID(IDMessageDetail);
-    console.log(message)
     if (message) {
       message.isRecall = true;
       const newMessage = await MessageDetailModel.update(message);
-      socket.emit("changeStateMessage", newMessage);
+
+      const user = getUser(IDReceiver);
+      if (user?.socketId) {
+        io.to(user.socketId).emit("changeStateMessage", newMessage);
+      }
     }
   });
 }
