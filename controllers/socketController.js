@@ -6,6 +6,7 @@ const BucketMessageController = require("../controllers/BucketMessageController"
 const { v4: uuidv4 } = require("uuid");
 const MessageController = require("../controllers/MessageController");
 const moment = require("moment-timezone");
+const s3 = require("../configs/connectS3");
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -93,6 +94,56 @@ const handleLoadConversation = (io, socket) => {
 
 const handleSendMessage = async (io, socket) => {
   socket.on("send_message", async (payload) => {
+    let dataConversation = await conversationController.getConversationByID(
+      payload.IDConversation,
+      payload.IDSender
+    );
+    let dataMessage = await MessageController.getMessagesByIDConversation(
+      payload.IDConversation
+    );
+
+    // Chat Image
+    const listImage = payload.image;
+    listImage.forEach(async (image) => {
+      //Save to db
+      console.log(payload.IDSender, payload.IDConversation, image);
+      const dataImageMessage = await handleImageMessage(
+        payload.IDSender,
+        payload.IDConversation,
+        image
+      );
+      console.log(handleImageMessage());
+      console.log(dataImageMessage);
+      //Update bucket
+      const dataBucket = await updateBucketMessage(
+        dataMessage.IDNewestBucket,
+        dataImageMessage.IDMessageDetail
+      );
+      if (dataBucket.IDBucketMessage !== dataMessage.IDNewestBucket) {
+        dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
+        const updateMessage = await MessageController.updateMessage(
+          dataMessage
+        );
+      }
+
+      // Trigger event socket
+      if (dataImageMessage) {
+        socket.emit("receive_message", dataImageMessage);
+      }
+      const IDReceiver = dataConversation.IDReceiver;
+      const user = getUser(IDReceiver);
+      if (user?.socketId) {
+        io.to(user.socketId).emit("receive_message", dataImageMessage);
+      }
+
+      //Update lastChange
+      updateLastChangeConversation(payload.IDConversation, payload.IDSender);
+      updateLastChangeConversation(payload.IDConversation, IDReceiver);
+    });
+
+    //Chat Video
+
+    // Chat text
     // payload = {
     //   IDSender: IDSender,
     //   IDConversation: IDConversation,
@@ -106,7 +157,6 @@ const handleSendMessage = async (io, socket) => {
       dataMessage.IDNewestBucket,
       textmessage.IDMessageDetail
     );
-    console.log(payload.IDConversation, payload.IDSender);
     const dataConversation = await conversationController.getConversationByID(
       payload.IDConversation,
       payload.IDSender
@@ -181,9 +231,44 @@ const handleTextMessage = async (io, socket, payload) => {
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = (io, socket) => {
   socket.on("test_socket", async (payload) => {
-    // const conversationController = require("../controllers/conversationController");
-    // const data = await conversationController.getMessageDetailByIDConversation({body: {IDConversation: "8b6e5b23-298e-4c32-89df-3d65f112ad59"}});
-    // console.log(data);
+    // const payload = {
+    //   image,
+    //   video,
+    // }
+    // socket.emit("test_socket", payload);
+    // socket.on("test_socket_server", (data) => {
+    //   console.log(data);
+    // });
+    // const s3 = require("../configs/connectS3");
+    // const { v4: uuidv4 } = require("uuid");
+    // const listImage = payload.image;
+    // const videos = payload.video;
+    // videos.forEach(async video => {
+    //   const params = {
+    //     Bucket: 'imagetintin',
+    //     Key: uuidv4(),
+    //     Body: video
+    //   }
+    //   s3.upload(params, (err, data) => {
+    //     if (err) {
+    //       console.error(err);
+    //     }
+    //     console.log(`File uploaded successfully at ${data.Location}`);
+    //   });
+    // });
+    // listImage.forEach(async (image) => {
+    //   const params = {
+    //     Bucket: 'imagetintin',
+    //     Key: uuidv4(),
+    //     Body: image
+    //   }
+    //   try {
+    //     const data = await s3.upload(params).promise();
+    //     console.log(`File uploaded successfully at ${data.Location}`);
+    //   } catch (error) {
+    //     console.error(error);
+    //   }
+    // });
   });
 };
 
