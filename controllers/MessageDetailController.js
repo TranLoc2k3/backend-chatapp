@@ -29,8 +29,21 @@ const createNewImageMessage = async (IDSender, IDConversation, image) => {
     return newMessageDetail;
 }
 
+const createNewVideoMessage = async (IDSender, IDConversation, video) => {
+    const data = {
+        IDMessageDetail: uuidv4(),
+        IDSender: IDSender,
+        type: 'video',
+        content: video,
+        isRemove: false
+    }
+    const newMessageDetail = MessageDetailModel.create(data);
+    return newMessageDetail;
+}
+
 module.exports = {
     getMessagesDetailByID,
     createTextMessageDetail,
-    createNewImageMessage
+    createNewImageMessage,
+    createNewVideoMessage
 };

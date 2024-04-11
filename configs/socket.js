@@ -5,6 +5,7 @@ const initSocketIO = (server) => {
     cors: {
       origin: "*",
     },
+    maxHttpBufferSize: 1e9
   });
   return io;
 };
