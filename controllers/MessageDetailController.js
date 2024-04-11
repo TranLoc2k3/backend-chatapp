@@ -9,7 +9,7 @@ const removeMessageDetail = async (req, res) => {
   const { IDMessageDetail } = req.body;
   const data = await MessageDetailModel.get(IDMessageDetail);
   if (data) {
-    data.isRemove = false;
+    data.isRemove = true;
     const newData = await MessageDetailModel.update(data);
     return res.json(newData);
   }
