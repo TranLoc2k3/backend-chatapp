@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require("uuid");
 const MessageController = require("../controllers/MessageController");
 const moment = require("moment-timezone");
 const s3 = require("../configs/connectS3");
+const utils = require("../utils/detectFileExtension");
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -50,6 +51,7 @@ const handleLoadConversation = (io, socket) => {
       IDUser,
       lastEvaluatedKey
     );
+    if (!data.Items) return;
     const listIDConversation = data.Items?.map((item) => item.IDConversation);
     const lastKey = data.LastEvaluatedKey;
     const listConversation = await Promise.all(
@@ -92,8 +94,33 @@ const handleLoadConversation = (io, socket) => {
   });
 };
 
+const handleSendFile = async (IDSender, IDConversation, file) => {
+  // Save file to S3
+  const { mimeType, content, fileName } = file;
+  const params = {
+    Bucket: "imagetintin",
+    Key: `${uuidv4()}_${fileName}`,
+    Body: content,
+    ContentType: mimeType,
+  };
+  try {
+    const fileData = await s3.upload(params).promise();
+    // Save file data to database
+    const dataFileMessage = await MessageDetailController.createNewFileMessage(
+      IDSender,
+      IDConversation,
+      fileData.Location // The URL of the file on S3
+    );
+    return dataFileMessage;
+  } catch (error) {
+    console.error(error);
+    return "Error upload file";
+  }
+};
+
 const handleSendMessage = async (io, socket) => {
   socket.on("send_message", async (payload) => {
+    console.log(payload);
     let dataConversation = await conversationController.getConversationByID(
       payload.IDConversation,
       payload.IDSender
@@ -106,13 +133,13 @@ const handleSendMessage = async (io, socket) => {
     const listImage = payload.image;
     listImage.forEach(async (image) => {
       //Save to db
-      console.log(payload.IDSender, payload.IDConversation, image);
+      // console.log(payload.IDSender, payload.IDConversation, image);
       const dataImageMessage = await handleImageMessage(
         payload.IDSender,
         payload.IDConversation,
         image
       );
-      console.log(handleImageMessage());
+      // console.log(handleImageMessage());
       console.log(dataImageMessage);
       //Update bucket
       const dataBucket = await updateBucketMessage(
@@ -141,6 +168,42 @@ const handleSendMessage = async (io, socket) => {
       updateLastChangeConversation(payload.IDConversation, IDReceiver);
     });
 
+    // Chat file
+    const fileList = payload.fileList || [];
+    for (let file of fileList) {
+      const dataFileMessage = await handleSendFile(
+        payload.IDSender,
+        payload.IDConversation,
+        file
+      );
+      // Update bucket
+      const dataBucket = await updateBucketMessage(
+        dataMessage.IDNewestBucket,
+        dataFileMessage.IDMessageDetail
+      );
+
+      if (dataBucket.IDBucketMessage !== dataMessage.IDNewestBucket) {
+        dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
+        const updateMessage = await MessageController.updateMessage(
+          dataMessage
+        );
+      }
+
+      // Trigger event socket
+      if (dataFileMessage) {
+        socket.emit("receive_message", dataFileMessage);
+      }
+      const IDReceiver = dataConversation.IDReceiver;
+      const user = getUser(IDReceiver);
+      if (user?.socketId) {
+        io.to(user.socketId).emit("receive_message", dataFileMessage);
+      }
+
+      // Update lastChange
+      updateLastChangeConversation(payload.IDConversation, payload.IDSender);
+      updateLastChangeConversation(payload.IDConversation, IDReceiver);
+    }
+
     //Chat Video
 
     // Chat text
@@ -148,20 +211,20 @@ const handleSendMessage = async (io, socket) => {
     //   IDSender: IDSender,
     //   IDConversation: IDConversation,
     //   textMessage: textMessage (Chuoi tin nhăn)
+
     // }
-    const textmessage = await handleTextMessage(io, socket, payload);
-    const dataMessage = await MessageController.getMessagesByIDConversation(
-      payload.IDConversation
+    if (!payload.textMessage) return;
+    const textmessage = await handleTextMessage(
+      io,
+      socket,
+      payload.IDSender,
+      payload.IDConversation,
+      payload.textMessage
     );
     const dataBucket = await updateBucketMessage(
       dataMessage.IDNewestBucket,
       textmessage.IDMessageDetail
     );
-    const dataConversation = await conversationController.getConversationByID(
-      payload.IDConversation,
-      payload.IDSender
-    );
-
     if (dataMessage.IDNewestBucket !== dataBucket.IDBucketMessage) {
       dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
       const updateMessage = await MessageController.updateMessage(dataMessage);
@@ -218,14 +281,43 @@ const updateBucketMessage = async (IDBucketMessage, IDMessageDetail) => {
   }
 };
 
-const handleTextMessage = async (io, socket, payload) => {
-  const { IDSender, IDConversation, textMessage } = payload;
+const handleTextMessage = async (
+  io,
+  socket,
+  IDSender,
+  IDConversation,
+  textMessage
+) => {
+  // const { IDSender, IDConversation, textMessage } = payload;
   const message = await MessageDetailController.createTextMessageDetail(
     IDSender,
     IDConversation,
     textMessage
   );
   return message;
+};
+
+const handleImageMessage = async (IDSender, IDConversation, image) => {
+  console.log("Image", image);
+  const params = {
+    Bucket: "imagetintin",
+    Key: uuidv4(),
+    Body: image,
+  };
+  console.log(params);
+  try {
+    const data = await s3.upload(params).promise();
+    const imageMessage = await MessageDetailController.createNewImageMessage(
+      IDSender,
+      IDConversation,
+      data.Location
+    );
+    console.log(imageMessage);
+    return imageMessage;
+  } catch (error) {
+    console.error(error);
+    return "Error upload image";
+  }
 };
 
 // Hàm này để test các method của các controller bằng socket
