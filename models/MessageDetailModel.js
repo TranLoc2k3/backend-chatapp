@@ -12,7 +12,14 @@ const schema = new dynamoose.Schema({
         type: String,
         default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS'),
     },
-    isRemove: Boolean
+    isRemove: {
+        type: Boolean,
+        default: false,
+    },
+    isRecall: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const MessageDetail = dynamoose.model("MessageDetail", schema);

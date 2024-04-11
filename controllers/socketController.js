@@ -8,6 +8,7 @@ const MessageController = require("../controllers/MessageController");
 const moment = require("moment-timezone");
 const s3 = require("../configs/connectS3");
 const URL = require("url").URL;
+const MessageDetailModel = require("../models/MessageDetailModel");
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -43,6 +44,19 @@ const handleSendFriendRequest = (io, socket) => {
     }
   });
 };
+
+const handleChangeStateMessage = async (io, socket) => {
+  socket.on("recallMessage", async (payload) => {
+    const { IDMessageDetail } = payload;
+    const message = await MessageDetailController.getMessagesDetailByID(IDMessageDetail);
+    console.log(message)
+    if (message) {
+      message.isRecall = true;
+      const newMessage = await MessageDetailModel.update(message);
+      socket.emit("changeStateMessage", newMessage);
+    }
+  });
+}
 
 const handleLoadConversation = (io, socket) => {
   socket.on("load_conversations", async (payload) => {
@@ -423,4 +437,5 @@ module.exports = {
   handleLoadConversation,
   handleTestSocket,
   handleSendMessage,
+  handleChangeStateMessage
 };
