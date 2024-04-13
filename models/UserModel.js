@@ -1,15 +1,23 @@
 const dynamoose = require("dynamoose");
 
-const schema = new dynamoose.Schema(
-  {
-    phone_number: {
-      type: String,
-      hashKey: true,
-    },
-    full_name: String,
-    hash_password: String,
-  }
-);
+const schema = new dynamoose.Schema({
+  ID: {
+    type: String,
+    hashKey: true,
+  },
+  username: String,
+  password: String,
+  fullname: String,
+  ismale: Boolean,
+  phone: String,
+  urlavatar: String ,
+  birthday: String,
+  friendList: {
+    type: Array,
+    schema: [String],
+  },
+});
 
-const UsersModel = dynamoose.model("Users", schema);
-module.exports = UsersModel;
+const User = dynamoose.model("User", schema);
+
+module.exports = User;
