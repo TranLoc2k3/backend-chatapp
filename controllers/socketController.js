@@ -24,12 +24,29 @@ const getUser = (phone) => {
   return onlineUsers.find((user) => user.phone === phone);
 };
 
-const handleUserOnline = (socket) => {
-  socket.on("new user connect", (payload) => {
-    addNewUser(payload.phone, socket.id);
-  });
+const getUserBySocketId = (socketId) => {
+  return onlineUsers.find((user) => user.socketId === socketId);
+}
 
-  socket.on("disconnect", () => {
+const handleUserOnline = (socket) => {
+  socket.on("new user connect", async (payload) => {
+    addNewUser(payload.phone, socket.id);
+    //Thêm IDConversation của User vào tất cả các room socket
+    const listIDConversation = await conversationController.getIDConversationByIDUser(payload.phone);
+    if (listIDConversation) {
+      listIDConversation.forEach(async (IDConversation) => {
+        socket.join(IDConversation);
+      })
+    }
+  });
+  socket.on("disconnect", async () => {
+    //Xoá IDConversation của User tất cả các room socket
+    const user = getUserBySocketId(socket.id);
+    const userPhone = user.phone;
+    const listIDConversation = await conversationController.getIDConversationByIDUser(userPhone);
+    listIDConversation.forEach(async (IDConversation) => {
+      socket.leave(IDConversation);
+    })
     removeUser(socket.id);
   });
 };
@@ -47,16 +64,18 @@ const handleSendFriendRequest = (io, socket) => {
 
 const handleChangeStateMessage = async (io, socket) => {
   socket.on("recallMessage", async (payload) => {
-    const { IDMessageDetail, IDReceiver } = payload;
+    // Có sự thay đổi trong payload, không cần gửi IDReceiver nữa
+    const { IDMessageDetail } = payload;
     const message = await MessageDetailController.getMessagesDetailByID(IDMessageDetail);
     if (message) {
       message.isRecall = true;
       const newMessage = await MessageDetailModel.update(message);
 
-      const user = getUser(IDReceiver);
-      if (user?.socketId) {
-        io.to(user.socketId).emit("changeStateMessage", newMessage);
-      }
+      // const user = getUser(IDReceiver);
+      // if (user?.socketId) {
+      //   io.to(user.socketId).emit("changeStateMessage", newMessage);
+      // }
+      io.to(message.IDConversation).emit("changeStateMessage", newMessage);
     }
   });
 }
@@ -141,9 +160,9 @@ const handleSendMessage = async (io, socket) => {
     socket.emit("sending_message", () => {
       return payload.textMessage
         ? payload.image.length +
-            payload.fileList.length +
-            payload.video.length +
-            1
+        payload.fileList.length +
+        payload.video.length +
+        1
         : payload.image.length + payload.fileList.length + payload.video.length;
     });
 
@@ -183,15 +202,10 @@ const handleSendMessage = async (io, socket) => {
           );
         }
 
-        socket.emit("receive_message", videoMessage);
-        const IDReceiver = dataConversation.IDReceiver;
-        const user = getUser(IDReceiver);
-        if (user?.socketId) {
-          io.to(user.socketId).emit("receive_message", videoMessage);
-        }
+        io.to(dataConversation.IDConversation).emit("receive_message", videoMessage);
 
-        updateLastChangeConversation(payload.IDConversation, payload.IDSender);
-        updateLastChangeConversation(payload.IDConversation, IDReceiver);
+        updateLastChangeConversation(payload.IDConversation, videoMessage.IDMessageDetail);
+
       } catch (error) {
         console.error(error);
       }
@@ -218,19 +232,9 @@ const handleSendMessage = async (io, socket) => {
         );
       }
 
-      // Trigger event socket
-      if (dataImageMessage) {
-        socket.emit("receive_message", dataImageMessage);
-      }
-      const IDReceiver = dataConversation.IDReceiver;
-      const user = getUser(IDReceiver);
-      if (user?.socketId) {
-        io.to(user.socketId).emit("receive_message", dataImageMessage);
-      }
+      io.to(dataConversation.IDConversation).emit("receive_message", dataImageMessage);
 
-      //Update lastChange
-      updateLastChangeConversation(payload.IDConversation, payload.IDSender);
-      updateLastChangeConversation(payload.IDConversation, IDReceiver);
+      updateLastChangeConversation(payload.IDConversation, dataImageMessage.IDMessageDetail);
     });
 
     // Chat file
@@ -254,19 +258,9 @@ const handleSendMessage = async (io, socket) => {
         );
       }
 
-      // Trigger event socket
-      if (dataFileMessage) {
-        socket.emit("receive_message", dataFileMessage);
-      }
-      const IDReceiver = dataConversation.IDReceiver;
-      const user = getUser(IDReceiver);
-      if (user?.socketId) {
-        io.to(user.socketId).emit("receive_message", dataFileMessage);
-      }
+      io.to(dataConversation.IDConversation).emit("receive_message", dataFileMessage);
 
-      // Update lastChange
-      updateLastChangeConversation(payload.IDConversation, payload.IDSender);
-      updateLastChangeConversation(payload.IDConversation, IDReceiver);
+      updateLastChangeConversation(payload.IDConversation, dataFileMessage.IDMessageDetail);
     }
 
     // Chat text
@@ -291,15 +285,9 @@ const handleSendMessage = async (io, socket) => {
           );
         }
 
-        socket.emit("receive_message", linkmessage);
-        const IDReceiver = dataConversation.IDReceiver;
-        const user = getUser(IDReceiver);
-        if (user?.socketId) {
-          io.to(user.socketId).emit("receive_message", linkmessage);
-        }
+        io.to(dataConversation.IDConversation).emit("receive_message", linkmessage);
 
-        updateLastChangeConversation(payload.IDConversation, payload.IDSender);
-        updateLastChangeConversation(payload.IDConversation, IDReceiver);
+        updateLastChangeConversation(payload.IDConversation, linkmessage.IDMessageDetail);
         return;
       }
       const textmessage = await handleTextMessage(
@@ -319,31 +307,24 @@ const handleSendMessage = async (io, socket) => {
         );
       }
 
-      socket.emit("receive_message", textmessage);
-      const IDReceiver = dataConversation.IDReceiver;
-      const user = getUser(IDReceiver);
-      if (user?.socketId) {
-        io.to(user.socketId).emit("receive_message", textmessage);
-      }
+      io.to(dataConversation.IDConversation).emit("receive_message", textmessage);
 
-      updateLastChangeConversation(payload.IDConversation, payload.IDSender);
-      updateLastChangeConversation(payload.IDConversation, IDReceiver);
+      updateLastChangeConversation(payload.IDConversation, textmessage.IDMessageDetail);
     }
   });
 };
 
-const updateLastChangeConversation = async (IDConversation, IDSender) => {
-  const dataConversation = await conversationController.getConversationByID(
-    IDConversation,
-    IDSender
-  );
-  dataConversation.lastChange = moment
-    .tz("Asia/Ho_Chi_Minh")
-    .format("YYYY-MM-DDTHH:mm:ss.SSS");
-  const updateConversation = await conversationController.updateConversation(
-    dataConversation
-  );
-  return updateConversation;
+const updateLastChangeConversation = async (IDConversation, IDNewestMessage) => {
+  const listConversation = await conversationController.getAllConversationByID(IDConversation) || [];
+  const list = listConversation.Items || [];
+  list.forEach(async (conversation) => {
+    conversation.lastChange = moment
+      .tz("Asia/Ho_Chi_Minh")
+      .format("YYYY-MM-DDTHH:mm:ss.SSS");
+    conversation.IDNewestMessage = IDNewestMessage;
+    const ConversationModel = require("../models/ConversationModel");
+    const updateConversation = await ConversationModel.update(conversation);
+  });
 };
 
 const updateBucketMessage = async (IDBucketMessage, IDMessageDetail) => {
@@ -382,13 +363,11 @@ const handleTextMessage = async (IDSender, IDConversation, textMessage) => {
 };
 
 const handleImageMessage = async (IDSender, IDConversation, image) => {
-  console.log("Image", image);
   const params = {
     Bucket: "imagetintin",
     Key: uuidv4(),
     Body: image,
   };
-  console.log(params);
   try {
     const data = await s3.upload(params).promise();
     const imageMessage = await MessageDetailController.createNewImageMessage(
@@ -396,7 +375,6 @@ const handleImageMessage = async (IDSender, IDConversation, image) => {
       IDConversation,
       data.Location
     );
-    console.log(imageMessage);
     return imageMessage;
   } catch (error) {
     console.error(error);
@@ -415,23 +393,7 @@ const stringIsAValidUrl = (s) => {
 };
 
 // Hàm này để test các method của các controller bằng socket
-const handleTestSocket = (io, socket) => {
-  const s3 = require("../configs/connectS3");
-  let videoChunks = [];
-  socket.on("test_socket", async (payload) => {
-    console.log(payload);
-    const string = payload.string;
-    console.log(string);
-
-    const stringIsAValidUrl = (s) => {
-      try {
-        new URL(s);
-        return true;
-      } catch (err) {
-        return false;
-      }
-    };
-  });
+const handleTestSocket = async (io, socket) => {
 };
 
 module.exports = {

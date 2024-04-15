@@ -16,20 +16,33 @@ const schema = new dynamoose.Schema({
         },
     },
     isGroup: Boolean,
-    groupName: String,  
+    groupName: String,
     groupAvatar: String,
     IDReceiver: String,
     IDNewestMessage: String,
+    rules: {
+        type: Object,
+        schema: {
+          IDOwner: String,
+          listIDCoOwner: {
+            type: Array,
+            schema: [String]
+          }
+        }
+      },
     groupMembers: {
         type: Array,
+        default: [],
         schema: [String],
     },
     listImage: {
         type: Array,
+        default: [],
         schema: [String],
     },
     listFile: {
         type: Array,
+        default: [],
         schema: [String],
     },
     lastChange: {

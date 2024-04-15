@@ -4,6 +4,9 @@ const MessageController = require("./MessageController");
 const MessageDetailController = require("./MessageDetailController");
 const BucketMessageController = require("./BucketMessageController");
 const { v4: uuidv4 } = require("uuid");
+const s3 = require("../configs/connectS3");
+const fs = require("fs");
+const { DataPipeline } = require("aws-sdk");
 
 const getConversation = async (IDUser, lastEvaluatedKey) => {
   const params = {
@@ -28,12 +31,46 @@ const getConversation = async (IDUser, lastEvaluatedKey) => {
   }
 };
 
+const getIDConversationByIDUser = async (IDUser) => {
+    const params = {
+      TableName: "Conversation",
+      IndexName: "IDSender-lastChange-index",
+      KeyConditionExpression: "IDSender = :sender",
+      ExpressionAttributeValues: {
+        ":sender": IDUser,
+      },
+      ScanIndexForward: false,
+    };
+    try {
+      const data = await docClient.query(params).promise();
+      const listIDConversation = data.Items?.map((item) => item.IDConversation);
+      return listIDConversation
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
 const getConversationByID = async (IDConversation, IDSender) => {
-  console.log(IDConversation, IDSender);
   // Phai truyen vao IDConversation va IDSender, IDConversation: Parition key, IDSender: Sort key
   const data = await ConversationModel.get({ IDConversation, IDSender });
   return data;
 };
+const getAllConversationByID = async (IDConversation) => {
+  const params = {
+    TableName: "Conversation",
+    KeyConditionExpression: "IDConversation = :IDConversation",
+    ExpressionAttributeValues: {
+      ":IDConversation": IDConversation,
+    },
+  };
+  try {
+    const data = await docClient.query(params).promise();
+    return data;
+  } catch (error) {
+    console.log(error);
+  }
+
+}
 
 const createNewSignleConversation = async (
   IDSender,
@@ -49,6 +86,49 @@ const createNewSignleConversation = async (
   await conversation.save();
   return conversation;
 };
+
+// Tạo thông tin các table của User tạo ra group
+const createNewGroupConversation = async ( IDOwner, groupName, groupAvatar, groupMembers) => {
+  const dataConversation = await createNewInfoConversationGroup(groupName, groupAvatar, IDOwner, groupMembers);
+  const dataMessage = await MessageController.createNewMessage(dataConversation.IDConversation);
+  let res = await Promise.all(groupMembers.map(async member => {
+    dataConversation.IDSender = member;
+    return ConversationModel.create(dataConversation);
+  }));
+  return res;
+}
+
+const createNewInfoConversationGroup = async (groupName, groupAvatar, IDOwner, groupMembers) => {
+  const fileContent = fs.readFileSync(groupAvatar.path);
+  const params = {
+    Bucket: 'products111',
+    Key: uuidv4(),
+    Body: fileContent,
+    ContentType: groupAvatar.mimetype
+  };
+  return new Promise((resolve, reject) => {
+    s3.upload(params, (err, s3Data) => {
+      if (err) {
+        reject(err);
+      }
+      else {
+        const urlavatar = s3Data.Location;
+        const conversationData = {
+          IDConversation: uuidv4(),
+          isGroup: true,
+          groupName: groupName,
+          groupAvatar: urlavatar,
+          groupMembers: groupMembers,
+          rules: {
+            IDOwner: IDOwner,
+            listIDCoOwner: []
+          }
+        }
+        resolve(conversationData);
+      }
+    });
+  });
+}
 
 const updateConversation = async (conversation) => {
   await conversation.save();
@@ -97,7 +177,11 @@ const getMessageDetailByIDConversation = async (req, res) => {
 module.exports = {
   getConversation,
   getConversationByID,
+  getAllConversationByID,
   createNewSignleConversation,
   updateConversation,
   getMessageDetailByIDConversation,
+  createNewGroupConversation,
+  createNewInfoConversationGroup,
+  getIDConversationByIDUser
 };
