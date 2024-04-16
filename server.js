@@ -35,6 +35,7 @@ io.on("connection", (socket) => {
   socketController.handleUserOnline(socket);
   socketController.handleSendFriendRequest(io, socket);
   socketController.handleLoadConversation(io, socket);
+  socketController.handleCreatGroupConversation(io, socket);
   socketController.handleSendMessage(io, socket);
   socketController.handleChangeStateMessage(io, socket);
   socketController.handleTestSocket(io, socket);

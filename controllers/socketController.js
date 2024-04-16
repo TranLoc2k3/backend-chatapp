@@ -43,14 +43,12 @@ const handleUserOnline = (socket) => {
   socket.on("disconnect", async () => {
     //Xoá IDConversation của User tất cả các room socket
     const user = getUserBySocketId(socket.id);
-    const userPhone = user?.phone;
+    const userPhone = user.phone;
     const listIDConversation =
       await conversationController.getIDConversationByIDUser(userPhone);
-    if (listIDConversation) {
-      listIDConversation.forEach(async (IDConversation) => {
-        socket.leave(IDConversation);
-      });
-    }
+    listIDConversation.forEach(async (IDConversation) => {
+      socket.leave(IDConversation);
+    });
     removeUser(socket.id);
   });
 };
@@ -127,10 +125,14 @@ const handleLoadConversation = (io, socket) => {
             urlavatar: Receiver.urlavatar,
           };
           return { ...conversation, Receiver };
+        } else {
         }
       })
     );
     res = listConversationDetails2;
+    listConversationDetails2.forEach((conversation) => {
+      socket.join(conversation.IDConversation);
+    });
 
     socket.emit("load_conversations_server", res);
   });
@@ -428,6 +430,31 @@ const stringIsAValidUrl = (s) => {
   } catch (err) {
     return false;
   }
+};
+
+const handleCreatGroupConversation = (io, socket) => {
+  socket.on("create_group_conversation", async (payload) => {
+    // groupMembers phải có cả IDOwner
+    const { IDOwner, groupName, groupMembers } = payload;
+    const groupAvatar = payload.groupAvatar;
+
+    const dataConversation =
+      await conversationController.createNewGroupConversation(
+        IDOwner,
+        groupName,
+        groupAvatar,
+        groupMembers
+      );
+    groupMembers.forEach(async (member) => {
+      const user = getUser(member);
+      if (user?.socketId) {
+        io.to(user.socketId).emit(
+          "new_group_conversation",
+          "Load conversation again!"
+        );
+      }
+    });
+  });
 };
 
 // Hàm này để test các method của các controller bằng socket
