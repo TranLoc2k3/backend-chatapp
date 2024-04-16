@@ -129,8 +129,8 @@ const createNewInfoConversationGroup = async (groupName, groupAvatar, IDOwner, g
 }
 
 const updateConversation = async (conversation) => {
-  await conversation.save();
-  return conversation;
+  const data = ConversationModel.update(conversation);
+  return data;
 };
 
 const getMessageDetailByIDConversation = async (req, res) => {
@@ -172,6 +172,34 @@ const getMessageDetailByIDConversation = async (req, res) => {
   return res.status(200).json({ message: "No message detail" });
 };
 
+const addCoOwnerToGroup = async (IDConversation, IDCoOwner) => {
+    const listConversation = await getAllConversationByID(IDConversation);
+    const list = listConversation.Items || [];
+    list.forEach(async (conversation) => {
+      let listIDCoOwnerSet = new Set(conversation.rules.listIDCoOwner);
+      listIDCoOwnerSet.add(IDCoOwner);
+      conversation.rules.listIDCoOwner = Array.from(listIDCoOwnerSet);
+      await updateConversation(conversation);
+    })
+    return "Success";
+
+}
+const removeConversationByID = async (IDConversation, IDSender) => {
+  const data = await ConversationModel.delete({ IDConversation, IDSender });
+  return data;
+}
+
+const removeCoOwnerFromGroup = async (IDConversation, IDCoOwner) => {
+    const listConversation = await getAllConversationByID(IDConversation);
+    const list = listConversation.Items || [];
+    list.forEach(async (conversation) => {
+      let listIDCoOwnerSet = new Set(conversation.rules.listIDCoOwner);
+      listIDCoOwnerSet.delete(IDCoOwner);
+      conversation.rules.listIDCoOwner = Array.from(listIDCoOwnerSet);
+      await updateConversation(conversation);
+    })
+    return "Success";
+}
 module.exports = {
   getConversation,
   getConversationByID,
@@ -181,5 +209,8 @@ module.exports = {
   getMessageDetailByIDConversation,
   createNewGroupConversation,
   createNewInfoConversationGroup,
-  getIDConversationByIDUser
+  getIDConversationByIDUser,
+  addCoOwnerToGroup,
+  removeCoOwnerFromGroup,
+  removeConversationByID
 };

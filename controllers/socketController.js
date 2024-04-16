@@ -465,6 +465,64 @@ const handleCreatGroupConversation = (io, socket) => {
   });
 };
 
+const handleAddMemberToGroup = async (io, socket) => {
+  socket.on("add_member_to_group", async (payload) => {
+    const { IDConversation, groupMembers} = payload;
+    const listConversation = await conversationController.getAllConversationByID(IDConversation);
+    const list = listConversation.Items || [];
+    var data;
+    // list.forEach(async (conversation) => {
+    for (const conversation of list)  {
+      var memberSet = new Set(conversation.groupMembers);
+      groupMembers.forEach(member => {
+        memberSet.add(member);
+      });
+      conversation.groupMembers = Array.from(memberSet);
+
+      data = await conversationController.updateConversation(conversation);
+    }
+    
+    
+    for (const member of groupMembers) {
+      data.IDSender = member;
+      const ls = await conversationController.updateConversation(data);
+    }
+
+    groupMembers.forEach(async (member) => {
+      const user = getUser(member);
+      if (user?.socketId) {
+        io.to(user.socketId).emit("new_group_conversation", "Load conversation again!");
+      }
+    });
+  });
+}
+
+const handleRemoveMemberFromGroup = async (io, socket) => {
+  socket.on("remove_member_from_group", async (payload) => {
+    const { IDConversation, groupMembers } = payload;
+    const listConversation = await conversationController.getAllConversationByID(IDConversation);
+    const list = listConversation.Items || [];
+    list.forEach(async (conversation) => {
+      let memberSet = new Set(conversation.groupMembers);
+      groupMembers.forEach(member => {
+        memberSet.delete(member);
+      });
+      conversation.groupMembers = Array.from(memberSet);
+      groupMembers.forEach(async (member) => {
+        await conversationController.removeConversationByID(IDConversation, member);
+      })
+      const data = await conversationController.updateConversation(conversation);
+    })
+    
+    groupMembers.forEach(async (member) => {
+      const user = getUser(member);
+      if (user?.socketId) {
+        io.to(user.socketId).emit("new_group_conversation", "Load conversation again!");
+      }
+    });
+  })
+}
+
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = async (io, socket) => {};
 
@@ -476,4 +534,6 @@ module.exports = {
   handleSendMessage,
   handleChangeStateMessage,
   handleCreatGroupConversation,
+  handleAddMemberToGroup,
+  handleRemoveMemberFromGroup
 };

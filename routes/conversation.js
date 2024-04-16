@@ -18,4 +18,25 @@ router.post("/createNewGroupConversation", upload.single("groupAvatar"), async (
   const data = await conversationController.createNewGroupConversation(IDOwner, groupName, groupAvatar, groupMembers);
   res.json(data);
 });
+
+// API thêm 1 user thành phó nhóm
+router.post("/addCoOwnerToGroup", async (req, res) => {
+  const {IDConversation, IDCoOwner} = req.body;
+  try {
+    const data = await conversationController.addCoOwnerToGroup(IDConversation, IDCoOwner);
+    return res.json(data); // Success
+  } catch (error) {
+    res.json(error)
+  }
+});
+
+router.post("/removeCoOwnerFromGroup", async (req, res) => {
+  const {IDConversation, IDCoOwner} = req.body;
+  try {
+    const data = await conversationController.removeCoOwnerFromGroup(IDConversation, IDCoOwner);
+    return res.json(data); // Success
+  } catch (error) {
+    res.json(error)
+  }
+})
 module.exports = router;
