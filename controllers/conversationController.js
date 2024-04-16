@@ -99,12 +99,10 @@ const createNewGroupConversation = async ( IDOwner, groupName, groupAvatar, grou
 }
 
 const createNewInfoConversationGroup = async (groupName, groupAvatar, IDOwner, groupMembers) => {
-  const fileContent = fs.readFileSync(groupAvatar.path);
   const params = {
     Bucket: 'products111',
     Key: uuidv4(),
-    Body: fileContent,
-    ContentType: groupAvatar.mimetype
+    Body: groupAvatar,
   };
   return new Promise((resolve, reject) => {
     s3.upload(params, (err, s3Data) => {

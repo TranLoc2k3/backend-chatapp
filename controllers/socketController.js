@@ -32,21 +32,21 @@ const handleUserOnline = (socket) => {
   socket.on("new user connect", async (payload) => {
     addNewUser(payload.phone, socket.id);
     //Thêm IDConversation của User vào tất cả các room socket
-    const listIDConversation = await conversationController.getIDConversationByIDUser(payload.phone);
-    if (listIDConversation) {
-      listIDConversation.forEach(async (IDConversation) => {
-        socket.join(IDConversation);
-      })
-    }
+    // const listIDConversation = await conversationController.getIDConversationByIDUser(payload.phone);
+    // if (listIDConversation) {
+    //   listIDConversation.forEach(async (IDConversation) => {
+    //     socket.join(IDConversation);
+    //   })
+    // }
   });
   socket.on("disconnect", async () => {
     //Xoá IDConversation của User tất cả các room socket
-    const user = getUserBySocketId(socket.id);
-    const userPhone = user.phone;
-    const listIDConversation = await conversationController.getIDConversationByIDUser(userPhone);
-    listIDConversation.forEach(async (IDConversation) => {
-      socket.leave(IDConversation);
-    })
+    // const user = getUserBySocketId(socket.id);
+    // const userPhone = user.phone;
+    // const listIDConversation = await conversationController.getIDConversationByIDUser(userPhone);
+    // listIDConversation.forEach(async (IDConversation) => {
+    //   socket.leave(IDConversation);
+    // })
     removeUser(socket.id);
   });
 };
@@ -122,9 +122,15 @@ const handleLoadConversation = (io, socket) => {
           };
           return { ...conversation, Receiver };
         }
+        else {
+          
+        }
       })
     );
     res = listConversationDetails2;
+    listConversationDetails2.forEach(conversation => {
+      socket.join(conversation.IDConversation);
+    })
 
     socket.emit("load_conversations_server", res);
   });
@@ -155,6 +161,7 @@ const handleSendFile = async (IDSender, IDConversation, file) => {
 };
 
 const handleSendMessage = async (io, socket) => {
+
   socket.on("send_message", async (payload) => {
     // Check có bao nhiêu sending message đang gửi
     socket.emit("sending_message", () => {
@@ -392,6 +399,27 @@ const stringIsAValidUrl = (s) => {
   }
 };
 
+const handleCreatGroupConversation = (io, socket) => {
+  socket.on("create_group_conversation", async (payload) => {
+    // groupMembers phải có cả IDOwner
+    const { IDOwner, groupName, groupMembers } = payload;
+    const groupAvatar = payload.groupAvatar;
+
+    const dataConversation = await conversationController.createNewGroupConversation(
+      IDOwner,
+      groupName,
+      groupAvatar,
+      groupMembers
+    );
+    groupMembers.forEach(async (member) => {
+      const user = getUser(member);
+      if (user?.socketId) {
+        io.to(user.socketId).emit("new_group_conversation", "Load conversation again!");
+      }
+    });
+  });
+}
+
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = async (io, socket) => {
 };
@@ -402,5 +430,6 @@ module.exports = {
   handleLoadConversation,
   handleTestSocket,
   handleSendMessage,
-  handleChangeStateMessage
+  handleChangeStateMessage,
+  handleCreatGroupConversation
 };
