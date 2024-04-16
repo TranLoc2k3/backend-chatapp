@@ -176,13 +176,30 @@ const addCoOwnerToGroup = async (IDConversation, IDCoOwner) => {
     const listConversation = await getAllConversationByID(IDConversation);
     const list = listConversation.Items || [];
     list.forEach(async (conversation) => {
-      conversation.rules.listIDCoOwner.push(IDCoOwner);
+      let listIDCoOwnerSet = new Set(conversation.rules.listIDCoOwner);
+      listIDCoOwnerSet.add(IDCoOwner);
+      conversation.rules.listIDCoOwner = Array.from(listIDCoOwnerSet);
       await updateConversation(conversation);
     })
     return "Success";
 
 }
+const removeConversationByID = async (IDConversation, IDSender) => {
+  const data = await ConversationModel.delete({ IDConversation, IDSender });
+  return data;
+}
 
+const removeCoOwnerFromGroup = async (IDConversation, IDCoOwner) => {
+    const listConversation = await getAllConversationByID(IDConversation);
+    const list = listConversation.Items || [];
+    list.forEach(async (conversation) => {
+      let listIDCoOwnerSet = new Set(conversation.rules.listIDCoOwner);
+      listIDCoOwnerSet.delete(IDCoOwner);
+      conversation.rules.listIDCoOwner = Array.from(listIDCoOwnerSet);
+      await updateConversation(conversation);
+    })
+    return "Success";
+}
 module.exports = {
   getConversation,
   getConversationByID,
@@ -193,5 +210,7 @@ module.exports = {
   createNewGroupConversation,
   createNewInfoConversationGroup,
   getIDConversationByIDUser,
-  addCoOwnerToGroup
+  addCoOwnerToGroup,
+  removeCoOwnerFromGroup,
+  removeConversationByID
 };

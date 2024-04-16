@@ -425,15 +425,24 @@ const handleAddMemberToGroup = async (io, socket) => {
     const { IDConversation, groupMembers} = payload;
     const listConversation = await conversationController.getAllConversationByID(IDConversation);
     const list = listConversation.Items || [];
-    list.forEach(async (conversation) => {
-      let memberSet = new Set(conversation.groupMembers);
+    var data;
+    // list.forEach(async (conversation) => {
+    for (const conversation of list)  {
+      var memberSet = new Set(conversation.groupMembers);
       groupMembers.forEach(member => {
         memberSet.add(member);
       });
       conversation.groupMembers = Array.from(memberSet);
 
-      const data = await conversationController.updateConversation(conversation);
-    })
+      data = await conversationController.updateConversation(conversation);
+    }
+    
+    
+    for (const member of groupMembers) {
+      data.IDSender = member;
+      const ls = await conversationController.updateConversation(data);
+    }
+
     groupMembers.forEach(async (member) => {
       const user = getUser(member);
       if (user?.socketId) {
@@ -454,9 +463,12 @@ const handleRemoveMemberFromGroup = async (io, socket) => {
         memberSet.delete(member);
       });
       conversation.groupMembers = Array.from(memberSet);
-
+      groupMembers.forEach(async (member) => {
+        await conversationController.removeConversationByID(IDConversation, member);
+      })
       const data = await conversationController.updateConversation(conversation);
     })
+    
     groupMembers.forEach(async (member) => {
       const user = getUser(member);
       if (user?.socketId) {
