@@ -43,12 +43,14 @@ const handleUserOnline = (socket) => {
   socket.on("disconnect", async () => {
     //Xoá IDConversation của User tất cả các room socket
     const user = getUserBySocketId(socket.id);
-    const userPhone = user.phone;
+    const userPhone = user?.phone;
     const listIDConversation =
       await conversationController.getIDConversationByIDUser(userPhone);
-    listIDConversation.forEach(async (IDConversation) => {
-      socket.leave(IDConversation);
-    });
+    if (listIDConversation) {
+      listIDConversation.forEach(async (IDConversation) => {
+        socket.leave(IDConversation);
+      });
+    }
     removeUser(socket.id);
   });
 };
