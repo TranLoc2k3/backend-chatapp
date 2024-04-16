@@ -6,6 +6,7 @@ const schema = new dynamoose.Schema({
         hashKey: true,
     },
     IDSender: String,
+    IDConversation: String,
     type: String,
     content: String,
     dateTime: {

@@ -24,6 +24,7 @@ const createTextMessageDetail = async (
   const data = {
     IDMessageDetail: uuidv4(),
     IDSender: IDSender,
+    IDConversation: IDConversation,
     type: "text",
     content: textMessage,
     isRemove: false,
@@ -36,6 +37,7 @@ const createNewImageMessage = async (IDSender, IDConversation, image) => {
   const data = {
     IDMessageDetail: uuidv4(),
     IDSender: IDSender,
+    IDConversation: IDConversation,
     type: "image",
     content: image,
     isRemove: false,
@@ -48,6 +50,7 @@ const createNewFileMessage = async (IDSender, IDConversation, image) => {
   const data = {
     IDMessageDetail: uuidv4(),
     IDSender: IDSender,
+    IDConversation: IDConversation,
     type: "file",
     content: image,
     isRemove: false,
@@ -60,6 +63,7 @@ const createNewVideoMessage = async (IDSender, IDConversation, video) => {
   const data = {
     IDMessageDetail: uuidv4(),
     IDSender: IDSender,
+    IDConversation: IDConversation,
     type: "video",
     content: video,
     isRemove: false,
@@ -72,6 +76,7 @@ const handleLinkMessage = async (IDSender, IDConversation, link) => {
   const data = {
     IDMessageDetail: uuidv4(),
     IDSender: IDSender,
+    IDConversation: IDConversation,
     type: "link",
     content: link,
     isRemove: false,
