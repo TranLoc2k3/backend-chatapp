@@ -32,23 +32,23 @@ const handleUserOnline = (socket) => {
   socket.on("new user connect", async (payload) => {
     addNewUser(payload.phone, socket.id);
     //Thêm IDConversation của User vào tất cả các room socket
-    const listIDConversation =
-      await conversationController.getIDConversationByIDUser(payload.phone);
-    if (listIDConversation) {
-      listIDConversation.forEach(async (IDConversation) => {
-        socket.join(IDConversation);
-      });
-    }
+    // const listIDConversation =
+    //   await conversationController.getIDConversationByIDUser(payload.phone);
+    // if (listIDConversation) {
+    //   listIDConversation.forEach(async (IDConversation) => {
+    //     socket.join(IDConversation);
+    //   });
+    // }
   });
   socket.on("disconnect", async () => {
     //Xoá IDConversation của User tất cả các room socket
-    const user = getUserBySocketId(socket.id);
-    const userPhone = user.phone;
-    const listIDConversation =
-      await conversationController.getIDConversationByIDUser(userPhone);
-    listIDConversation.forEach(async (IDConversation) => {
-      socket.leave(IDConversation);
-    });
+    // const user = getUserBySocketId(socket.id);
+    // const userPhone = user?.phone;
+    // const listIDConversation =
+    //   await conversationController.getIDConversationByIDUser(userPhone);
+    // listIDConversation.forEach(async (IDConversation) => {
+    //   socket.leave(IDConversation);
+    // });
     removeUser(socket.id);
   });
 };
@@ -112,7 +112,6 @@ const handleLoadConversation = (io, socket) => {
         return { ...conversation, MessageDetail };
       })
     );
-
     const listConversationDetails2 = await Promise.all(
       listConversationWithDetails.map(async (conversation) => {
         if (conversation.isGroup == false) {
@@ -126,13 +125,21 @@ const handleLoadConversation = (io, socket) => {
           };
           return { ...conversation, Receiver };
         } else {
+          // Cân return
+          let Receiver = {
+            fullname: conversation.groupName,
+            urlavatar: conversation.groupAvatar,
+          };
+          return { ...conversation, Receiver };
         }
       })
     );
     res = listConversationDetails2;
-    listConversationDetails2.forEach((conversation) => {
-      socket.join(conversation.IDConversation);
-    });
+    if (listConversationDetails2) {
+      listConversationDetails2.forEach((conversation) => {
+        socket.join(conversation.IDConversation);
+      });
+    }
 
     socket.emit("load_conversations_server", res);
   });
@@ -435,6 +442,7 @@ const stringIsAValidUrl = (s) => {
 const handleCreatGroupConversation = (io, socket) => {
   socket.on("create_group_conversation", async (payload) => {
     // groupMembers phải có cả IDOwner
+    console.log(payload);
     const { IDOwner, groupName, groupMembers } = payload;
     const groupAvatar = payload.groupAvatar;
 
@@ -467,4 +475,5 @@ module.exports = {
   handleTestSocket,
   handleSendMessage,
   handleChangeStateMessage,
+  handleCreatGroupConversation,
 };
