@@ -38,6 +38,7 @@ io.on("connection", (socket) => {
   socketController.handleLoadConversation(io, socket);
   socketController.handleCreatGroupConversation(io, socket);
   socketController.handleAddMemberToGroup(io, socket);
+  socketController.handleRemoveMemberFromGroup(io, socket);
 
   socketController.handleSendMessage(io, socket);
   socketController.handleChangeStateMessage(io, socket);

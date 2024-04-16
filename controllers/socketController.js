@@ -433,7 +433,6 @@ const handleAddMemberToGroup = async (io, socket) => {
       conversation.groupMembers = Array.from(memberSet);
 
       const data = await conversationController.updateConversation(conversation);
-      console.log(data);    
     })
     groupMembers.forEach(async (member) => {
       const user = getUser(member);
@@ -442,6 +441,29 @@ const handleAddMemberToGroup = async (io, socket) => {
       }
     });
   });
+}
+
+const handleRemoveMemberFromGroup = async (io, socket) => {
+  socket.on("remove_member_from_group", async (payload) => {
+    const { IDConversation, groupMembers } = payload;
+    const listConversation = await conversationController.getAllConversationByID(IDConversation);
+    const list = listConversation.Items || [];
+    list.forEach(async (conversation) => {
+      let memberSet = new Set(conversation.groupMembers);
+      groupMembers.forEach(member => {
+        memberSet.delete(member);
+      });
+      conversation.groupMembers = Array.from(memberSet);
+
+      const data = await conversationController.updateConversation(conversation);
+    })
+    groupMembers.forEach(async (member) => {
+      const user = getUser(member);
+      if (user?.socketId) {
+        io.to(user.socketId).emit("new_group_conversation", "Load conversation again!");
+      }
+    });
+  })
 }
 
 // Hàm này để test các method của các controller bằng socket
@@ -456,5 +478,6 @@ module.exports = {
   handleSendMessage,
   handleChangeStateMessage,
   handleCreatGroupConversation,
-  handleAddMemberToGroup
+  handleAddMemberToGroup,
+  handleRemoveMemberFromGroup
 };
