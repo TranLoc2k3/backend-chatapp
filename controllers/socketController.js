@@ -26,27 +26,29 @@ const getUser = (phone) => {
 
 const getUserBySocketId = (socketId) => {
   return onlineUsers.find((user) => user.socketId === socketId);
-}
+};
 
 const handleUserOnline = (socket) => {
   socket.on("new user connect", async (payload) => {
     addNewUser(payload.phone, socket.id);
     //Thêm IDConversation của User vào tất cả các room socket
-    // const listIDConversation = await conversationController.getIDConversationByIDUser(payload.phone);
+    // const listIDConversation =
+    //   await conversationController.getIDConversationByIDUser(payload.phone);
     // if (listIDConversation) {
     //   listIDConversation.forEach(async (IDConversation) => {
     //     socket.join(IDConversation);
-    //   })
+    //   });
     // }
   });
   socket.on("disconnect", async () => {
     //Xoá IDConversation của User tất cả các room socket
     // const user = getUserBySocketId(socket.id);
-    // const userPhone = user.phone;
-    // const listIDConversation = await conversationController.getIDConversationByIDUser(userPhone);
+    // const userPhone = user?.phone;
+    // const listIDConversation =
+    //   await conversationController.getIDConversationByIDUser(userPhone);
     // listIDConversation.forEach(async (IDConversation) => {
     //   socket.leave(IDConversation);
-    // })
+    // });
     removeUser(socket.id);
   });
 };
@@ -66,7 +68,9 @@ const handleChangeStateMessage = async (io, socket) => {
   socket.on("recallMessage", async (payload) => {
     // Có sự thay đổi trong payload, không cần gửi IDReceiver nữa
     const { IDMessageDetail } = payload;
-    const message = await MessageDetailController.getMessagesDetailByID(IDMessageDetail);
+    const message = await MessageDetailController.getMessagesDetailByID(
+      IDMessageDetail
+    );
     if (message) {
       message.isRecall = true;
       const newMessage = await MessageDetailModel.update(message);
@@ -78,7 +82,7 @@ const handleChangeStateMessage = async (io, socket) => {
       io.to(message.IDConversation).emit("changeStateMessage", newMessage);
     }
   });
-}
+};
 
 const handleLoadConversation = (io, socket) => {
   socket.on("load_conversations", async (payload) => {
@@ -108,7 +112,6 @@ const handleLoadConversation = (io, socket) => {
         return { ...conversation, MessageDetail };
       })
     );
-
     const listConversationDetails2 = await Promise.all(
       listConversationWithDetails.map(async (conversation) => {
         if (conversation.isGroup == false) {
@@ -121,16 +124,22 @@ const handleLoadConversation = (io, socket) => {
             urlavatar: Receiver.urlavatar,
           };
           return { ...conversation, Receiver };
-        }
-        else {
-          
+        } else {
+          // Cân return
+          let Receiver = {
+            fullname: conversation.groupName,
+            urlavatar: conversation.groupAvatar,
+          };
+          return { ...conversation, Receiver };
         }
       })
     );
     res = listConversationDetails2;
-    listConversationDetails2.forEach(conversation => {
-      socket.join(conversation.IDConversation);
-    })
+    if (listConversationDetails2) {
+      listConversationDetails2.forEach((conversation) => {
+        socket.join(conversation.IDConversation);
+      });
+    }
 
     socket.emit("load_conversations_server", res);
   });
@@ -161,15 +170,14 @@ const handleSendFile = async (IDSender, IDConversation, file) => {
 };
 
 const handleSendMessage = async (io, socket) => {
-
   socket.on("send_message", async (payload) => {
     // Check có bao nhiêu sending message đang gửi
     socket.emit("sending_message", () => {
       return payload.textMessage
         ? payload.image.length +
-        payload.fileList.length +
-        payload.video.length +
-        1
+            payload.fileList.length +
+            payload.video.length +
+            1
         : payload.image.length + payload.fileList.length + payload.video.length;
     });
 
@@ -189,7 +197,6 @@ const handleSendMessage = async (io, socket) => {
         Key: uuidv4(),
         Body: video,
       };
-
       try {
         const data = await s3.upload(params).promise();
         const videoMessage =
@@ -209,10 +216,15 @@ const handleSendMessage = async (io, socket) => {
           );
         }
 
-        io.to(dataConversation.IDConversation).emit("receive_message", videoMessage);
+        io.to(dataConversation.IDConversation).emit(
+          "receive_message",
+          videoMessage
+        );
 
-        updateLastChangeConversation(payload.IDConversation, videoMessage.IDMessageDetail);
-
+        updateLastChangeConversation(
+          payload.IDConversation,
+          videoMessage.IDMessageDetail
+        );
       } catch (error) {
         console.error(error);
       }
@@ -239,9 +251,15 @@ const handleSendMessage = async (io, socket) => {
         );
       }
 
-      io.to(dataConversation.IDConversation).emit("receive_message", dataImageMessage);
+      io.to(dataConversation.IDConversation).emit(
+        "receive_message",
+        dataImageMessage
+      );
 
-      updateLastChangeConversation(payload.IDConversation, dataImageMessage.IDMessageDetail);
+      updateLastChangeConversation(
+        payload.IDConversation,
+        dataImageMessage.IDMessageDetail
+      );
     });
 
     // Chat file
@@ -265,9 +283,15 @@ const handleSendMessage = async (io, socket) => {
         );
       }
 
-      io.to(dataConversation.IDConversation).emit("receive_message", dataFileMessage);
+      io.to(dataConversation.IDConversation).emit(
+        "receive_message",
+        dataFileMessage
+      );
 
-      updateLastChangeConversation(payload.IDConversation, dataFileMessage.IDMessageDetail);
+      updateLastChangeConversation(
+        payload.IDConversation,
+        dataFileMessage.IDMessageDetail
+      );
     }
 
     // Chat text
@@ -292,9 +316,15 @@ const handleSendMessage = async (io, socket) => {
           );
         }
 
-        io.to(dataConversation.IDConversation).emit("receive_message", linkmessage);
+        io.to(dataConversation.IDConversation).emit(
+          "receive_message",
+          linkmessage
+        );
 
-        updateLastChangeConversation(payload.IDConversation, linkmessage.IDMessageDetail);
+        updateLastChangeConversation(
+          payload.IDConversation,
+          linkmessage.IDMessageDetail
+        );
         return;
       }
       const textmessage = await handleTextMessage(
@@ -314,15 +344,25 @@ const handleSendMessage = async (io, socket) => {
         );
       }
 
-      io.to(dataConversation.IDConversation).emit("receive_message", textmessage);
+      io.to(dataConversation.IDConversation).emit(
+        "receive_message",
+        textmessage
+      );
 
-      updateLastChangeConversation(payload.IDConversation, textmessage.IDMessageDetail);
+      updateLastChangeConversation(
+        payload.IDConversation,
+        textmessage.IDMessageDetail
+      );
     }
   });
 };
 
-const updateLastChangeConversation = async (IDConversation, IDNewestMessage) => {
-  const listConversation = await conversationController.getAllConversationByID(IDConversation) || [];
+const updateLastChangeConversation = async (
+  IDConversation,
+  IDNewestMessage
+) => {
+  const listConversation =
+    (await conversationController.getAllConversationByID(IDConversation)) || [];
   const list = listConversation.Items || [];
   list.forEach(async (conversation) => {
     conversation.lastChange = moment
@@ -402,23 +442,28 @@ const stringIsAValidUrl = (s) => {
 const handleCreatGroupConversation = (io, socket) => {
   socket.on("create_group_conversation", async (payload) => {
     // groupMembers phải có cả IDOwner
+    console.log(payload);
     const { IDOwner, groupName, groupMembers } = payload;
     const groupAvatar = payload.groupAvatar;
 
-    const dataConversation = await conversationController.createNewGroupConversation(
-      IDOwner,
-      groupName,
-      groupAvatar,
-      groupMembers
-    );
+    const dataConversation =
+      await conversationController.createNewGroupConversation(
+        IDOwner,
+        groupName,
+        groupAvatar,
+        groupMembers
+      );
     groupMembers.forEach(async (member) => {
       const user = getUser(member);
       if (user?.socketId) {
-        io.to(user.socketId).emit("new_group_conversation", "Load conversation again!");
+        io.to(user.socketId).emit(
+          "new_group_conversation",
+          "Load conversation again!"
+        );
       }
     });
   });
-}
+};
 
 const handleAddMemberToGroup = async (io, socket) => {
   socket.on("add_member_to_group", async (payload) => {
@@ -479,8 +524,7 @@ const handleRemoveMemberFromGroup = async (io, socket) => {
 }
 
 // Hàm này để test các method của các controller bằng socket
-const handleTestSocket = async (io, socket) => {
-};
+const handleTestSocket = async (io, socket) => {};
 
 module.exports = {
   handleSendFriendRequest,

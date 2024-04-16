@@ -142,10 +142,19 @@ const handleFriendRequest = async (req, res) => {
       });
       if (type === "ACCEPTED") {
         addToFriendList(updated.senderId, updated.receiverId);
-        
-        const data = await conversationController.createNewSignleConversation(updated.senderId, updated.receiverId);
-        const data2 = await conversationController.createNewSignleConversation(updated.receiverId, updated.senderId, data.IDConversation);       
-        const dataNewMessage = MessageController.createNewMessage(data.IDConversation);
+
+        const data = await conversationController.createNewSignleConversation(
+          updated.senderId,
+          updated.receiverId
+        );
+        const data2 = await conversationController.createNewSignleConversation(
+          updated.receiverId,
+          updated.senderId,
+          data.IDConversation
+        );
+        const dataNewMessage = MessageController.createNewMessage(
+          data.IDConversation
+        );
       }
       return res.status(200).json({
         code: 1,
