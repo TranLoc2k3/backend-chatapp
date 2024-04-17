@@ -235,6 +235,36 @@ const getMemberInfoByIDConversation = async (req, res) => {
     res.status(200).json(membersInfo);
   } else res.json({ message: "Conversation not found" });
 };
+const deleteConversationByID = async (IDConversation, IDSender) => {
+  const data = await ConversationModel.delete({IDConversation: IDConversation, IDSender: IDSender});
+  return data;
+}
+
+const leaveGroup = async (req, res) => {
+  let { IDConversation, IDSender } = req.body;
+
+  // Xoa conversation cua user
+  await deleteConversationByID(IDConversation, IDSender);
+
+  //Xoa thông tin user trong conversation
+  const listConversation = await getAllConversationByID(IDConversation);
+  const list = listConversation.Items || [];
+
+  list.forEach(async (conversation) => {
+    let listMemberSet = new Set(conversation.groupMembers);
+    listMemberSet.delete(IDSender);
+    conversation.groupMembers = Array.from(listMemberSet);
+
+    // Xoa coowner neu la coowner
+    let listIDCoOwnerSet = new Set(conversation.rules.listIDCoOwner);
+    listIDCoOwnerSet.delete(IDSender);
+    conversation.rules.listIDCoOwner = Array.from(listIDCoOwnerSet);
+
+    await updateConversation(conversation);
+  });
+
+};
+
 
 module.exports = {
   getConversation,
@@ -250,4 +280,6 @@ module.exports = {
   removeCoOwnerFromGroup,
   removeConversationByID,
   getMemberInfoByIDConversation,
+  deleteConversationByID,
+  leaveGroup
 };
