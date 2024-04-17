@@ -472,11 +472,6 @@ const handleAddMemberToGroup = async (io, socket) => {
       await conversationController.getAllConversationByID(IDConversation);
     const list = listConversation.Items || [];
 
-    //Check permission
-    if (!(list[0].rules.IDOwner === IDUser || list[0].rules.listIDCoOwner.includes(IDUser))) {
-      socket.emit("message_from_server", "You are not owner or co-owner of this group!");
-      return;
-    }
     var data;
     // list.forEach(async (conversation) => {
     for (const conversation of list) {
@@ -551,6 +546,39 @@ const handleRemoveMemberFromGroup = async (io, socket) => {
   });
 };
 
+const handleDeleteGroup = async (io, socket) => {
+  socket.on("delete_group", async (payload) => {
+    const { IDConversation, IDUser } = payload;
+    const listConversation =
+      await conversationController.getAllConversationByID(IDConversation);
+    const list = listConversation.Items || [];
+
+    // Check permission
+    if (list[0].rules.IDOwner !== IDUser) {
+      socket.emit("message_from_server", "You are not owner of this group!");
+      return;
+    }
+    const groupMembers = list[0].groupMembers;
+    console.log(groupMembers)
+    list.forEach(async (conversation) => {
+      await conversationController.removeConversationByID(
+        IDConversation,
+        conversation.IDSender
+      );
+    });
+
+    groupMembers.forEach(async (member) => {
+      const user = getUser(member);
+      if (user?.socketId) {
+        io.to(user.socketId).emit(
+          "new_group_conversation",
+          "Load conversation again!"
+        );
+      }
+    });
+  });
+}
+
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = async (io, socket) => {};
 
@@ -564,4 +592,5 @@ module.exports = {
   handleCreatGroupConversation,
   handleAddMemberToGroup,
   handleRemoveMemberFromGroup,
+  handleDeleteGroup
 };
