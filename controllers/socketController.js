@@ -494,6 +494,9 @@ const handleAddMemberToGroup = async (io, socket) => {
       const ls = await conversationController.updateConversation(data);
     }
 
+    // Update lastChange time conversation
+    updateLastChangeConversation(IDConversation, data.IDNewestMessage);
+
     groupMembers.forEach(async (member) => {
       const user = getUser(member);
       if (user?.socketId) {
