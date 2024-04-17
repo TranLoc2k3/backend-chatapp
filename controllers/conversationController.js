@@ -1,5 +1,6 @@
 const docClient = require("../configs/AWS");
 const ConversationModel = require("../models/ConversationModel"); // Add missing import statement
+const UserModel = require("../models/UserModel");
 const MessageController = require("./MessageController");
 const MessageDetailController = require("./MessageDetailController");
 const BucketMessageController = require("./BucketMessageController");
@@ -32,23 +33,23 @@ const getConversation = async (IDUser, lastEvaluatedKey) => {
 };
 
 const getIDConversationByIDUser = async (IDUser) => {
-    const params = {
-      TableName: "Conversation",
-      IndexName: "IDSender-lastChange-index",
-      KeyConditionExpression: "IDSender = :sender",
-      ExpressionAttributeValues: {
-        ":sender": IDUser,
-      },
-      ScanIndexForward: false,
-    };
-    try {
-      const data = await docClient.query(params).promise();
-      const listIDConversation = data.Items?.map((item) => item.IDConversation);
-      return listIDConversation
-    } catch (error) {
-      console.log(error);
-    }
+  const params = {
+    TableName: "Conversation",
+    IndexName: "IDSender-lastChange-index",
+    KeyConditionExpression: "IDSender = :sender",
+    ExpressionAttributeValues: {
+      ":sender": IDUser,
+    },
+    ScanIndexForward: false,
   };
+  try {
+    const data = await docClient.query(params).promise();
+    const listIDConversation = data.Items?.map((item) => item.IDConversation);
+    return listIDConversation;
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 const getConversationByID = async (IDConversation, IDSender) => {
   // Phai truyen vao IDConversation va IDSender, IDConversation: Parition key, IDSender: Sort key
@@ -69,8 +70,7 @@ const getAllConversationByID = async (IDConversation) => {
   } catch (error) {
     console.log(error);
   }
-
-}
+};
 
 const createNewSignleConversation = async (
   IDSender,
@@ -88,19 +88,38 @@ const createNewSignleConversation = async (
 };
 
 // Tạo thông tin các table của User tạo ra group
-const createNewGroupConversation = async ( IDOwner, groupName, groupAvatar, groupMembers) => {
-  const dataConversation = await createNewInfoConversationGroup(groupName, groupAvatar, IDOwner, groupMembers);
-  const dataMessage = await MessageController.createNewMessage(dataConversation.IDConversation);
-  let res = await Promise.all(groupMembers.map(async member => {
-    dataConversation.IDSender = member;
-    return ConversationModel.create(dataConversation);
-  }));
+const createNewGroupConversation = async (
+  IDOwner,
+  groupName,
+  groupAvatar,
+  groupMembers
+) => {
+  const dataConversation = await createNewInfoConversationGroup(
+    groupName,
+    groupAvatar,
+    IDOwner,
+    groupMembers
+  );
+  const dataMessage = await MessageController.createNewMessage(
+    dataConversation.IDConversation
+  );
+  let res = await Promise.all(
+    groupMembers.map(async (member) => {
+      dataConversation.IDSender = member;
+      return ConversationModel.create(dataConversation);
+    })
+  );
   return res;
-}
+};
 
-const createNewInfoConversationGroup = async (groupName, groupAvatar, IDOwner, groupMembers) => {
+const createNewInfoConversationGroup = async (
+  groupName,
+  groupAvatar,
+  IDOwner,
+  groupMembers
+) => {
   const params = {
-    Bucket: 'products111',
+    Bucket: "products111",
     Key: uuidv4(),
     Body: groupAvatar,
   };
@@ -108,8 +127,7 @@ const createNewInfoConversationGroup = async (groupName, groupAvatar, IDOwner, g
     s3.upload(params, (err, s3Data) => {
       if (err) {
         reject(err);
-      }
-      else {
+      } else {
         const urlavatar = s3Data.Location;
         const conversationData = {
           IDConversation: uuidv4(),
@@ -119,14 +137,14 @@ const createNewInfoConversationGroup = async (groupName, groupAvatar, IDOwner, g
           groupMembers: groupMembers,
           rules: {
             IDOwner: IDOwner,
-            listIDCoOwner: []
-          }
-        }
+            listIDCoOwner: [],
+          },
+        };
         resolve(conversationData);
       }
     });
   });
-}
+};
 
 const updateConversation = async (conversation) => {
   const data = ConversationModel.update(conversation);
@@ -173,33 +191,51 @@ const getMessageDetailByIDConversation = async (req, res) => {
 };
 
 const addCoOwnerToGroup = async (IDConversation, IDCoOwner) => {
-    const listConversation = await getAllConversationByID(IDConversation);
-    const list = listConversation.Items || [];
-    list.forEach(async (conversation) => {
-      let listIDCoOwnerSet = new Set(conversation.rules.listIDCoOwner);
-      listIDCoOwnerSet.add(IDCoOwner);
-      conversation.rules.listIDCoOwner = Array.from(listIDCoOwnerSet);
-      await updateConversation(conversation);
-    })
-    return "Success";
-
-}
+  const listConversation = await getAllConversationByID(IDConversation);
+  const list = listConversation.Items || [];
+  list.forEach(async (conversation) => {
+    let listIDCoOwnerSet = new Set(conversation.rules.listIDCoOwner);
+    listIDCoOwnerSet.add(IDCoOwner);
+    conversation.rules.listIDCoOwner = Array.from(listIDCoOwnerSet);
+    await updateConversation(conversation);
+  });
+  return "Success";
+};
 const removeConversationByID = async (IDConversation, IDSender) => {
   const data = await ConversationModel.delete({ IDConversation, IDSender });
   return data;
-}
+};
 
 const removeCoOwnerFromGroup = async (IDConversation, IDCoOwner) => {
-    const listConversation = await getAllConversationByID(IDConversation);
-    const list = listConversation.Items || [];
-    list.forEach(async (conversation) => {
-      let listIDCoOwnerSet = new Set(conversation.rules.listIDCoOwner);
-      listIDCoOwnerSet.delete(IDCoOwner);
-      conversation.rules.listIDCoOwner = Array.from(listIDCoOwnerSet);
-      await updateConversation(conversation);
-    })
-    return "Success";
-}
+  const listConversation = await getAllConversationByID(IDConversation);
+  const list = listConversation.Items || [];
+  list.forEach(async (conversation) => {
+    let listIDCoOwnerSet = new Set(conversation.rules.listIDCoOwner);
+    listIDCoOwnerSet.delete(IDCoOwner);
+    conversation.rules.listIDCoOwner = Array.from(listIDCoOwnerSet);
+    await updateConversation(conversation);
+  });
+  return "Success";
+};
+
+const getMemberInfoByIDConversation = async (req, res) => {
+  const { IDConversation, IDSender } = req.body;
+  const conversation = await ConversationModel.get({
+    IDConversation,
+    IDSender,
+  });
+
+  if (conversation) {
+    const membersInfo = await Promise.all(
+      conversation.groupMembers.map(async (memberID) => {
+        const member = await UserModel.get(memberID);
+        return member;
+      })
+    );
+    res.status(200).json(membersInfo);
+  } else res.json({ message: "Conversation not found" });
+};
+
 module.exports = {
   getConversation,
   getConversationByID,
@@ -212,5 +248,6 @@ module.exports = {
   getIDConversationByIDUser,
   addCoOwnerToGroup,
   removeCoOwnerFromGroup,
-  removeConversationByID
+  removeConversationByID,
+  getMemberInfoByIDConversation,
 };
