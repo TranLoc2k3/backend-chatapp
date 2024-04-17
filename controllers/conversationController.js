@@ -240,8 +240,7 @@ const deleteConversationByID = async (IDConversation, IDSender) => {
   return data;
 }
 
-const leaveGroup = async (req, res) => {
-  let { IDConversation, IDSender } = req.body;
+const leaveGroup = async (IDConversation, IDSender) => {
 
   // Xoa conversation cua user
   await deleteConversationByID(IDConversation, IDSender);
@@ -262,7 +261,7 @@ const leaveGroup = async (req, res) => {
 
     await updateConversation(conversation);
   });
-
+  return "Success";
 };
 
 

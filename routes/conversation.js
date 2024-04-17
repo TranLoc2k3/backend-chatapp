@@ -59,4 +59,15 @@ router.post(
   conversationController.getMemberInfoByIDConversation
 );
 
+router.post("/leave-group", async (req, res) => {
+  const { IDConversation, IDSender } = req.body;
+  try {
+    const data = await conversationController.leaveGroup(IDConversation, IDSender);
+    return res.json(data); // Success
+  } catch (error) {
+    res.json(error);
+  }
+
+});
+
 module.exports = router;
