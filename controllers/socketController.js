@@ -175,9 +175,9 @@ const handleSendMessage = async (io, socket) => {
     socket.emit("sending_message", () => {
       return payload.textMessage
         ? payload.image.length +
-            payload.fileList.length +
-            payload.video.length +
-            1
+        payload.fileList.length +
+        payload.video.length +
+        1
         : payload.image.length + payload.fileList.length + payload.video.length;
     });
 
@@ -467,10 +467,16 @@ const handleCreatGroupConversation = (io, socket) => {
 
 const handleAddMemberToGroup = async (io, socket) => {
   socket.on("add_member_to_group", async (payload) => {
-    const { IDConversation, groupMembers } = payload;
+    const { IDConversation, IDUser, groupMembers } = payload;
     const listConversation =
       await conversationController.getAllConversationByID(IDConversation);
     const list = listConversation.Items || [];
+
+    //Check permission
+    if (!(list[0].rules.IDOwner === IDUser || list[0].rules.listIDCoOwner.includes(IDUser))) {
+      socket.emit("message_from_server", "You are not owner or co-owner of this group!");
+      return;
+    }
     var data;
     // list.forEach(async (conversation) => {
     for (const conversation of list) {
@@ -502,10 +508,17 @@ const handleAddMemberToGroup = async (io, socket) => {
 
 const handleRemoveMemberFromGroup = async (io, socket) => {
   socket.on("remove_member_from_group", async (payload) => {
-    const { IDConversation, groupMembers } = payload;
+    const { IDConversation, IDUser, groupMembers } = payload;
     const listConversation =
       await conversationController.getAllConversationByID(IDConversation);
     const list = listConversation.Items || [];
+
+    // Check permission
+    if (!(list[0].rules.IDOwner === IDUser || list[0].rules.listIDCoOwner.includes(IDUser))) {
+      socket.emit("message_from_server", "You are not owner or co-owner of this group!");
+      return;
+    }
+
     list.forEach(async (conversation) => {
       let memberSet = new Set(conversation.groupMembers);
       groupMembers.forEach((member) => {
