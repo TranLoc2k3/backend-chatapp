@@ -29,6 +29,10 @@ const schema = new dynamoose.Schema({
         type: Boolean,
         default: false,
     },
+    IDMessageReply: {
+        type: String,
+        default: null,
+    },
 });
 
 const MessageDetail = dynamoose.model("MessageDetail", schema);

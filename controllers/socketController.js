@@ -651,6 +651,44 @@ const hadlePassMessage = async (io, socket) => {
     io.to(IDPassConversation).emit("receive_message", newMessage);
   });
 };
+
+const handleReplyMessage = async (io, socket) => {
+  socket.on("reply_message", async (payload) => {
+    const { IDConversation, IDUser, IDReplyMessage, content } = payload;
+
+    let newMessage = {
+      IDMessageDetail: uuidv4(),
+      IDSender: IDUser,
+      IDConversation: IDConversation,
+      type: "text",
+      content: content,
+      dateTime: moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS"),
+      isReply: true,
+      IDMessageReply: IDReplyMessage,
+    };
+
+    const message = await MessageDetailController.createNewMessage(newMessage);
+
+    // Load data table message
+    let dataMessage = await MessageController.getMessagesByIDConversation(
+      IDConversation
+    );
+    const dataBucket = await updateBucketMessage(
+      dataMessage.IDNewestBucket,
+      message.IDMessageDetail
+    );
+
+    if (dataBucket.IDBucketMessage !== dataMessage.IDNewestBucket) {
+      dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
+      const updateMessage = await MessageController.updateMessage(dataMessage);
+    }
+
+    // Update last change và tin nhắn mới nhất cho tất cả các cuộc hội thoại có IDConversation
+    await updateLastChangeConversation(IDConversation, message.IDMessageDetail);
+
+    io.to(IDConversation).emit("receive_message", message);
+  });
+};
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = async (io, socket) => {};
 
@@ -678,4 +716,5 @@ module.exports = {
   handleDeleteGroup,
   hadlePassMessage,
   handleLoadMemberOfGroup,
+  handleReplyMessage,
 };

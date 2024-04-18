@@ -44,6 +44,7 @@ io.on("connection", (socket) => {
   socketController.handleSendMessage(io, socket);
   socketController.handleChangeStateMessage(io, socket);
   socketController.hadlePassMessage(io, socket);
+  socketController.handleReplyMessage(io, socket);
   socketController.handleTestSocket(io, socket);
 
   socketController.handleLoadMemberOfGroup(io, socket);
