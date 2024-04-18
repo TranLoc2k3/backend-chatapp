@@ -280,6 +280,34 @@ const leaveGroup = async (IDConversation, IDSender) => {
   return "Success";
 };
 
+const updateInfoGroup = async (IDConversation, groupName, groupAvatar) => {
+  const listConversation = await getAllConversationByID(IDConversation);
+  const list = listConversation.Items || [];
+
+  list.forEach(async (conversation) => {
+    if (groupName)
+      conversation.groupName = groupName;
+    if (groupAvatar) {
+      const params = {
+        Bucket: "products111",
+        Key: uuidv4(),
+        Body: groupAvatar,
+      };
+      s3.upload(params, (err, s3Data) => {
+        if (err) {
+          console.log(err);
+        } else {
+          const urlavatar = s3Data.Location;
+          conversation.groupAvatar = urlavatar;
+        }
+      });
+    }
+    await updateConversation(conversation);
+  });
+  return "Success";
+
+}
+
 module.exports = {
   getConversation,
   getConversationByID,
@@ -296,4 +324,5 @@ module.exports = {
   getMemberInfoByIDConversation,
   deleteConversationByID,
   leaveGroup,
+  updateInfoGroup
 };

@@ -70,4 +70,10 @@ router.post("/leave-group", async (req, res) => {
 
 });
 
+router.post("/update-info-group", async (req, res) => {
+  const { IDConversation, groupName, groupAvatar } = req.body;
+  const data = await conversationController.updateInfoGroup(IDConversation, groupName, groupAvatar);
+  res.json(data);
+});
+
 module.exports = router;

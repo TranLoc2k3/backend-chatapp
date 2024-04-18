@@ -9,6 +9,7 @@ const moment = require("moment-timezone");
 const s3 = require("../configs/connectS3");
 const URL = require("url").URL;
 const MessageDetailModel = require("../models/MessageDetailModel");
+const { group } = require("console");
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -537,6 +538,13 @@ const handleRemoveMemberFromGroup = async (io, socket) => {
         memberSet.delete(member);
       });
       conversation.groupMembers = Array.from(memberSet);
+
+      let CoOwner = new Set(conversation.rules.listIDCoOwner);
+      groupMembers.forEach((member) => {
+        CoOwner.delete(member);
+      });
+      conversation.rules.listIDCoOwner = Array.from(CoOwner);
+
       groupMembers.forEach(async (member) => {
         await conversationController.removeConversationByID(
           IDConversation,
