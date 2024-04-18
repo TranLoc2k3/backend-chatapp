@@ -91,6 +91,16 @@ const handleLinkMessage = async (IDSender, IDConversation, link) => {
   return newMessageDetail;
 };
 
+const createNewMessage = async (MessageDetail) => {
+  try {
+    const data = await MessageDetailModel.create(MessageDetail);
+    return data;
+  } catch (err) {
+    console.error(err);
+    return "Loi";
+  }
+}
+
 module.exports = {
   getMessagesDetailByID,
   createTextMessageDetail,
@@ -99,4 +109,5 @@ module.exports = {
   createNewVideoMessage,
   handleLinkMessage,
   removeMessageDetail,
+  createNewMessage
 };
