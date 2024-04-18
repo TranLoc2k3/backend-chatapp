@@ -177,7 +177,11 @@ const getMessageDetailByIDConversation = async (req, res) => {
         const data = await MessageDetailController.getMessagesDetailByID(
           IDMessageDetail
         );
-        return data;
+        const userSender = await UserModel.get(data.IDSender);
+        return {
+          ...data,
+          userSender: userSender,
+        };
       })
     );
     listMessageDetail.reverse();
