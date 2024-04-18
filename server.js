@@ -46,6 +46,8 @@ io.on("connection", (socket) => {
   socketController.hadlePassMessage(io, socket);
   socketController.handleReplyMessage(io, socket);
   socketController.handleTestSocket(io, socket);
+
+  socketController.handleLoadMemberOfGroup(io, socket);
 });
 
 server.listen(port, () => {

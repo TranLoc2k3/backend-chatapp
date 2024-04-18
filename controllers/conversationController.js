@@ -229,7 +229,7 @@ const getMemberInfoByIDConversation = async (req, res) => {
     IDSender,
   });
 
-  const conversationRules = conversation.rules;
+  const conversationRules = conversation?.rules;
 
   if (conversation) {
     const membersInfo = await Promise.all(
@@ -303,16 +303,14 @@ const updateInfoGroup = async (IDConversation, groupName, groupAvatar) => {
   }
 
   for (const conversation of list) {
-    if (groupName)
-      conversation.groupName = groupName;
+    if (groupName) conversation.groupName = groupName;
     if (groupAvatar) {
       conversation.groupAvatar = urlavatar;
     }
     await updateConversation(conversation);
   }
   return "Success";
-
-}
+};
 
 module.exports = {
   getConversation,
@@ -330,5 +328,5 @@ module.exports = {
   getMemberInfoByIDConversation,
   deleteConversationByID,
   leaveGroup,
-  updateInfoGroup
+  updateInfoGroup,
 };

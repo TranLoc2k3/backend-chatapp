@@ -613,13 +613,17 @@ const handleDeleteGroup = async (io, socket) => {
 const hadlePassMessage = async (io, socket) => {
   socket.on("pass_message", async (payload) => {
     const { IDPassConversation, IDUser, IDMessageDetail } = payload;
-    let data = await MessageDetailController.getMessagesDetailByID(IDMessageDetail);
+    let data = await MessageDetailController.getMessagesDetailByID(
+      IDMessageDetail
+    );
 
     // Cập nhật một số thông tin từ message cũ
     data.IDMessageDetail = uuidv4();
     data.IDConversation = IDPassConversation;
     data.IDSender = IDUser;
-    data.dateTime = moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS");
+    data.dateTime = moment
+      .tz("Asia/Ho_Chi_Minh")
+      .format("YYYY-MM-DDTHH:mm:ss.SSS");
     data.isPass = true;
     //Lưu dữ liệu message mới này
     const newMessage = await MessageDetailController.createNewMessage(data);
@@ -635,22 +639,24 @@ const hadlePassMessage = async (io, socket) => {
 
     if (dataBucket.IDBucketMessage !== dataMessage.IDNewestBucket) {
       dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
-      const updateMessage = await MessageController.updateMessage(
-        dataMessage
-      );
+      const updateMessage = await MessageController.updateMessage(dataMessage);
     }
 
     // Update last change và tin nhắn mới nhất cho tất cả các cuộc hội thoại có IDPassConversation
-    await updateLastChangeConversation(IDPassConversation, newMessage.IDMessageDetail);
+    await updateLastChangeConversation(
+      IDPassConversation,
+      newMessage.IDMessageDetail
+    );
 
     io.to(IDPassConversation).emit("receive_message", newMessage);
   });
-}
+};
 
 const handleReplyMessage = async (io, socket) => {
   socket.on("reply_message", async (payload) => {
-    const {IDConversation, IDUser, IDReplyMessage, content} = payload;
+    const { IDConversation, IDUser, IDReplyMessage, content } = payload;
 
+    const userSender = await UserModel.get(IDUser);
     let newMessage = {
       IDMessageDetail: uuidv4(),
       IDSender: IDUser,
@@ -659,8 +665,8 @@ const handleReplyMessage = async (io, socket) => {
       content: content,
       dateTime: moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS"),
       isReply: true,
-      IDMessageReply: IDReplyMessage
-    }
+      IDMessageReply: IDReplyMessage,
+    };
 
     const message = await MessageDetailController.createNewMessage(newMessage);
 
@@ -675,21 +681,31 @@ const handleReplyMessage = async (io, socket) => {
 
     if (dataBucket.IDBucketMessage !== dataMessage.IDNewestBucket) {
       dataMessage.IDNewestBucket = dataBucket.IDBucketMessage;
-      const updateMessage = await MessageController.updateMessage(
-        dataMessage
-      );
+      const updateMessage = await MessageController.updateMessage(dataMessage);
     }
 
     // Update last change và tin nhắn mới nhất cho tất cả các cuộc hội thoại có IDConversation
     await updateLastChangeConversation(IDConversation, message.IDMessageDetail);
 
-    io.to(IDConversation).emit("receive_message", message);
-
+    io.to(IDConversation).emit("receive_message", {
+      ...message,
+      userSender,
+    });
   });
-
-}
+};
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = async (io, socket) => {};
+
+// Trigger load lại member của group
+const handleLoadMemberOfGroup = async (io, socket) => {
+  socket.on("load_member_of_group", (payload) => {
+    const { IDConversation } = payload;
+    io.to(IDConversation).emit(
+      "load_member_of_group_server",
+      "Load member group again"
+    );
+  });
+};
 
 module.exports = {
   handleSendFriendRequest,
@@ -703,5 +719,6 @@ module.exports = {
   handleRemoveMemberFromGroup,
   handleDeleteGroup,
   hadlePassMessage,
+  handleLoadMemberOfGroup,
   handleReplyMessage,
 };
