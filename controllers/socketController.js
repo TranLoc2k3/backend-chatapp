@@ -10,6 +10,7 @@ const s3 = require("../configs/connectS3");
 const URL = require("url").URL;
 const MessageDetailModel = require("../models/MessageDetailModel");
 const UserModel = require("../models/UserModel");
+const { group } = require("console");
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -543,42 +544,22 @@ const handleRemoveMemberFromGroup = async (io, socket) => {
         memberSet.delete(member);
       });
       conversation.groupMembers = Array.from(memberSet);
-      for (member of groupMembers) {
+
+      let CoOwner = new Set(conversation.rules.listIDCoOwner);
+      groupMembers.forEach((member) => {
+        CoOwner.delete(member);
+      });
+      conversation.rules.listIDCoOwner = Array.from(CoOwner);
+
+      for (let member of groupMembers) {
         await conversationController.removeConversationByID(
           IDConversation,
           member
         );
       }
-      // groupMembers.forEach(async (member) => {
-      //   await conversationController.removeConversationByID(
-      //     IDConversation,
-      //     member
-      //   );
-      // });
 
       data = await conversationController.updateConversation(conversation);
     }
-    // list.forEach(async (conversation) => {
-    //   let memberSet = new Set(conversation.groupMembers);
-    //   groupMembers.forEach((member) => {
-    //     memberSet.delete(member);
-    //   });
-    //   conversation.groupMembers = Array.from(memberSet);
-    //   for (member of groupMembers) {
-    //     await conversationController.removeConversationByID(
-    //       IDConversation,
-    //       member
-    //     );
-    //   }
-    //   groupMembers.forEach(async (member) => {
-    //     await conversationController.removeConversationByID(
-    //       IDConversation,
-    //       member
-    //     );
-    //   });
-
-    //   data = await conversationController.updateConversation(conversation);
-    // });
 
     await updateLastChangeConversation(IDConversation, data.IDNewestMessage);
 
