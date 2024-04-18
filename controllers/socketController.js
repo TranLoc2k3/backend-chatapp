@@ -488,7 +488,9 @@ const handleAddMemberToGroup = async (io, socket) => {
     }
 
     // Update lastChange time conversation
+    // updateLastChangeConversation(IDConversation, data.IDNewestMessage); -> Code cũ
     await updateLastChangeConversation(IDConversation, data.IDNewestMessage);
+
     if (IDUser) {
       const user = getUser(IDUser);
       if (user?.socketId) {
