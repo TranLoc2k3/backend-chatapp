@@ -140,7 +140,6 @@ const handleLoadConversation = (io, socket) => {
         socket.join(conversation.IDConversation);
       });
     }
-
     socket.emit("load_conversations_server", res);
   });
 };
@@ -221,7 +220,7 @@ const handleSendMessage = async (io, socket) => {
           videoMessage
         );
 
-        updateLastChangeConversation(
+        await updateLastChangeConversation(
           payload.IDConversation,
           videoMessage.IDMessageDetail
         );
@@ -256,7 +255,7 @@ const handleSendMessage = async (io, socket) => {
         dataImageMessage
       );
 
-      updateLastChangeConversation(
+      await updateLastChangeConversation(
         payload.IDConversation,
         dataImageMessage.IDMessageDetail
       );
@@ -288,7 +287,7 @@ const handleSendMessage = async (io, socket) => {
         dataFileMessage
       );
 
-      updateLastChangeConversation(
+      await updateLastChangeConversation(
         payload.IDConversation,
         dataFileMessage.IDMessageDetail
       );
@@ -321,7 +320,7 @@ const handleSendMessage = async (io, socket) => {
           linkmessage
         );
 
-        updateLastChangeConversation(
+        await updateLastChangeConversation(
           payload.IDConversation,
           linkmessage.IDMessageDetail
         );
@@ -349,7 +348,7 @@ const handleSendMessage = async (io, socket) => {
         textmessage
       );
 
-      updateLastChangeConversation(
+      await updateLastChangeConversation(
         payload.IDConversation,
         textmessage.IDMessageDetail
       );
@@ -480,7 +479,6 @@ const handleAddMemberToGroup = async (io, socket) => {
         memberSet.add(member);
       });
       conversation.groupMembers = Array.from(memberSet);
-
       data = await conversationController.updateConversation(conversation);
     }
 
@@ -490,10 +488,17 @@ const handleAddMemberToGroup = async (io, socket) => {
     }
 
     // Update lastChange time conversation
-    updateLastChangeConversation(IDConversation, data.IDNewestMessage);
-
+    await updateLastChangeConversation(IDConversation, data.IDNewestMessage);
+    if (IDUser) {
+      const user = getUser(IDUser);
+      if (user?.socketId) {
+        io.to(user.socketId).emit(
+          "new_group_conversation",
+          "Load conversation again!"
+        );
+      }
+    }
     groupMembers.forEach(async (member) => {
-      console.log("member");
       const user = getUser(member);
       if (user?.socketId) {
         io.to(user.socketId).emit(

@@ -250,12 +250,14 @@ const getMemberInfoByIDConversation = async (req, res) => {
   } else res.json({ message: "Conversation not found" });
 };
 const deleteConversationByID = async (IDConversation, IDSender) => {
-  const data = await ConversationModel.delete({IDConversation: IDConversation, IDSender: IDSender});
+  const data = await ConversationModel.delete({
+    IDConversation: IDConversation,
+    IDSender: IDSender,
+  });
   return data;
-}
+};
 
 const leaveGroup = async (IDConversation, IDSender) => {
-
   // Xoa conversation cua user
   await deleteConversationByID(IDConversation, IDSender);
 
@@ -278,7 +280,6 @@ const leaveGroup = async (IDConversation, IDSender) => {
   return "Success";
 };
 
-
 module.exports = {
   getConversation,
   getConversationByID,
@@ -294,5 +295,5 @@ module.exports = {
   removeConversationByID,
   getMemberInfoByIDConversation,
   deleteConversationByID,
-  leaveGroup
+  leaveGroup,
 };
