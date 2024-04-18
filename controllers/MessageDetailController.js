@@ -1,5 +1,6 @@
 const MessageDetailModel = require("../models/MessageDetailModel");
 const { v4: uuidv4 } = require("uuid");
+const moment = require("moment-timezone");
 const getMessagesDetailByID = async (IDMessageDetail) => {
   const data = await MessageDetailModel.get(IDMessageDetail);
   return data;
@@ -28,6 +29,7 @@ const createTextMessageDetail = async (
     type: "text",
     content: textMessage,
     isRemove: false,
+    // dateTime: moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS"),
   };
   const newMessageDetail = MessageDetailModel.create(data);
   return newMessageDetail;

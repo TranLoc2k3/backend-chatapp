@@ -175,9 +175,9 @@ const handleSendMessage = async (io, socket) => {
     socket.emit("sending_message", () => {
       return payload.textMessage
         ? payload.image.length +
-        payload.fileList.length +
-        payload.video.length +
-        1
+            payload.fileList.length +
+            payload.video.length +
+            1
         : payload.image.length + payload.fileList.length + payload.video.length;
     });
 
@@ -343,7 +343,7 @@ const handleSendMessage = async (io, socket) => {
           dataMessage
         );
       }
-
+      console.log(textmessage);
       io.to(dataConversation.IDConversation).emit(
         "receive_message",
         textmessage
@@ -473,8 +473,16 @@ const handleAddMemberToGroup = async (io, socket) => {
     const list = listConversation.Items || [];
 
     //Check permission
-    if (!(list[0].rules.IDOwner === IDUser || list[0].rules.listIDCoOwner.includes(IDUser))) {
-      socket.emit("message_from_server", "You are not owner or co-owner of this group!");
+    if (
+      !(
+        list[0].rules.IDOwner === IDUser ||
+        list[0].rules.listIDCoOwner.includes(IDUser)
+      )
+    ) {
+      socket.emit(
+        "message_from_server",
+        "You are not owner or co-owner of this group!"
+      );
       return;
     }
     var data;
@@ -498,6 +506,7 @@ const handleAddMemberToGroup = async (io, socket) => {
     updateLastChangeConversation(IDConversation, data.IDNewestMessage);
 
     groupMembers.forEach(async (member) => {
+      console.log("member");
       const user = getUser(member);
       if (user?.socketId) {
         io.to(user.socketId).emit(
@@ -517,8 +526,16 @@ const handleRemoveMemberFromGroup = async (io, socket) => {
     const list = listConversation.Items || [];
 
     // Check permission
-    if (!(list[0].rules.IDOwner === IDUser || list[0].rules.listIDCoOwner.includes(IDUser))) {
-      socket.emit("message_from_server", "You are not owner or co-owner of this group!");
+    if (
+      !(
+        list[0].rules.IDOwner === IDUser ||
+        list[0].rules.listIDCoOwner.includes(IDUser)
+      )
+    ) {
+      socket.emit(
+        "message_from_server",
+        "You are not owner or co-owner of this group!"
+      );
       return;
     }
 

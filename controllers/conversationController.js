@@ -225,10 +225,24 @@ const getMemberInfoByIDConversation = async (req, res) => {
     IDSender,
   });
 
+  const conversationRules = conversation.rules;
+
   if (conversation) {
     const membersInfo = await Promise.all(
       conversation.groupMembers.map(async (memberID) => {
-        const member = await UserModel.get(memberID);
+        let member = await UserModel.get(memberID);
+        member = {
+          ...member,
+          isOwner: false,
+          isCoOwner: false,
+        };
+        // Xử lý thêm để check Trưởng nhóm, phó nhóm trả về client
+        if (memberID === conversationRules.IDOwner) {
+          member.isOwner = true;
+        } else if (conversationRules.listIDCoOwner.includes(memberID)) {
+          member.isCoOwner = true;
+        }
+
         return member;
       })
     );

@@ -223,7 +223,7 @@ const getFriendListByID = async (req, res) => {
 
   if (myUser) {
     const friendDetails = await Promise.all(
-      myUser.friendList.map(async (friendID) => {
+      myUser?.friendList.map(async (friendID) => {
         const friend = await UserModel.get(friendID);
         return friend;
       })
