@@ -222,14 +222,15 @@ const getFriendListByID = async (req, res) => {
   const myUser = await UserModel.get(userID);
 
   if (myUser) {
-    const friendDetails = myUser.friendList && Array.isArray(myUser.friendList)
-      ? await Promise.all(
-        myUser.friendList.map(async (friendID) => {
-          const friend = await UserModel.get(friendID);
-          return friend;
-        })
-      )
-      : [];
+    const friendDetails =
+      myUser.friendList && Array.isArray(myUser.friendList)
+        ? await Promise.all(
+            myUser.friendList.map(async (friendID) => {
+              const friend = await UserModel.get(friendID);
+              return friend;
+            })
+          )
+        : [];
     res.status(200).json(friendDetails);
   } else res.json({ message: "User not found" });
 };

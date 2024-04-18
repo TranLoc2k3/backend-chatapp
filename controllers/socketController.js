@@ -140,7 +140,6 @@ const handleLoadConversation = (io, socket) => {
         socket.join(conversation.IDConversation);
       });
     }
-
     socket.emit("load_conversations_server", res);
   });
 };
@@ -175,9 +174,9 @@ const handleSendMessage = async (io, socket) => {
     socket.emit("sending_message", () => {
       return payload.textMessage
         ? payload.image.length +
-        payload.fileList.length +
-        payload.video.length +
-        1
+            payload.fileList.length +
+            payload.video.length +
+            1
         : payload.image.length + payload.fileList.length + payload.video.length;
     });
 
@@ -221,7 +220,7 @@ const handleSendMessage = async (io, socket) => {
           videoMessage
         );
 
-        updateLastChangeConversation(
+        await updateLastChangeConversation(
           payload.IDConversation,
           videoMessage.IDMessageDetail
         );
@@ -256,7 +255,7 @@ const handleSendMessage = async (io, socket) => {
         dataImageMessage
       );
 
-      updateLastChangeConversation(
+      await updateLastChangeConversation(
         payload.IDConversation,
         dataImageMessage.IDMessageDetail
       );
@@ -288,7 +287,7 @@ const handleSendMessage = async (io, socket) => {
         dataFileMessage
       );
 
-      updateLastChangeConversation(
+      await updateLastChangeConversation(
         payload.IDConversation,
         dataFileMessage.IDMessageDetail
       );
@@ -321,7 +320,7 @@ const handleSendMessage = async (io, socket) => {
           linkmessage
         );
 
-        updateLastChangeConversation(
+        await updateLastChangeConversation(
           payload.IDConversation,
           linkmessage.IDMessageDetail
         );
@@ -343,13 +342,13 @@ const handleSendMessage = async (io, socket) => {
           dataMessage
         );
       }
-
+      console.log(textmessage);
       io.to(dataConversation.IDConversation).emit(
         "receive_message",
         textmessage
       );
 
-      updateLastChangeConversation(
+      await updateLastChangeConversation(
         payload.IDConversation,
         textmessage.IDMessageDetail
       );
@@ -480,7 +479,6 @@ const handleAddMemberToGroup = async (io, socket) => {
         memberSet.add(member);
       });
       conversation.groupMembers = Array.from(memberSet);
-
       data = await conversationController.updateConversation(conversation);
     }
 
@@ -490,8 +488,16 @@ const handleAddMemberToGroup = async (io, socket) => {
     }
 
     // Update lastChange time conversation
-    updateLastChangeConversation(IDConversation, data.IDNewestMessage);
-
+    await updateLastChangeConversation(IDConversation, data.IDNewestMessage);
+    if (IDUser) {
+      const user = getUser(IDUser);
+      if (user?.socketId) {
+        io.to(user.socketId).emit(
+          "new_group_conversation",
+          "Load conversation again!"
+        );
+      }
+    }
     groupMembers.forEach(async (member) => {
       const user = getUser(member);
       if (user?.socketId) {
@@ -512,8 +518,16 @@ const handleRemoveMemberFromGroup = async (io, socket) => {
     const list = listConversation.Items || [];
 
     // Check permission
-    if (!(list[0].rules.IDOwner === IDUser || list[0].rules.listIDCoOwner.includes(IDUser))) {
-      socket.emit("message_from_server", "You are not owner or co-owner of this group!");
+    if (
+      !(
+        list[0].rules.IDOwner === IDUser ||
+        list[0].rules.listIDCoOwner.includes(IDUser)
+      )
+    ) {
+      socket.emit(
+        "message_from_server",
+        "You are not owner or co-owner of this group!"
+      );
       return;
     }
 
@@ -559,7 +573,7 @@ const handleDeleteGroup = async (io, socket) => {
       return;
     }
     const groupMembers = list[0].groupMembers;
-    console.log(groupMembers)
+    console.log(groupMembers);
     list.forEach(async (conversation) => {
       await conversationController.removeConversationByID(
         IDConversation,
@@ -577,7 +591,7 @@ const handleDeleteGroup = async (io, socket) => {
       }
     });
   });
-}
+};
 
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = async (io, socket) => {};
@@ -592,5 +606,5 @@ module.exports = {
   handleCreatGroupConversation,
   handleAddMemberToGroup,
   handleRemoveMemberFromGroup,
-  handleDeleteGroup
+  handleDeleteGroup,
 };
