@@ -9,6 +9,7 @@ const moment = require("moment-timezone");
 const s3 = require("../configs/connectS3");
 const URL = require("url").URL;
 const MessageDetailModel = require("../models/MessageDetailModel");
+const UserModel = require("../models/UserModel");
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -123,6 +124,7 @@ const handleLoadConversation = (io, socket) => {
             fullname: Receiver.fullname,
             urlavatar: Receiver.urlavatar,
           };
+
           return { ...conversation, Receiver };
         } else {
           // Cân return
@@ -180,6 +182,8 @@ const handleSendMessage = async (io, socket) => {
         : payload.image.length + payload.fileList.length + payload.video.length;
     });
 
+    const userSender = await UserModel.get(payload.IDSender);
+
     let dataConversation = await conversationController.getConversationByID(
       payload.IDConversation,
       payload.IDSender
@@ -215,10 +219,10 @@ const handleSendMessage = async (io, socket) => {
           );
         }
 
-        io.to(dataConversation.IDConversation).emit(
-          "receive_message",
-          videoMessage
-        );
+        io.to(dataConversation.IDConversation).emit("receive_message", {
+          ...videoMessage,
+          userSender,
+        });
 
         await updateLastChangeConversation(
           payload.IDConversation,
@@ -250,10 +254,10 @@ const handleSendMessage = async (io, socket) => {
         );
       }
 
-      io.to(dataConversation.IDConversation).emit(
-        "receive_message",
-        dataImageMessage
-      );
+      io.to(dataConversation.IDConversation).emit("receive_message", {
+        ...dataImageMessage,
+        userSender,
+      });
 
       await updateLastChangeConversation(
         payload.IDConversation,
@@ -282,10 +286,10 @@ const handleSendMessage = async (io, socket) => {
         );
       }
 
-      io.to(dataConversation.IDConversation).emit(
-        "receive_message",
-        dataFileMessage
-      );
+      io.to(dataConversation.IDConversation).emit("receive_message", {
+        ...dataFileMessage,
+        userSender,
+      });
 
       await updateLastChangeConversation(
         payload.IDConversation,
@@ -315,10 +319,10 @@ const handleSendMessage = async (io, socket) => {
           );
         }
 
-        io.to(dataConversation.IDConversation).emit(
-          "receive_message",
-          linkmessage
-        );
+        io.to(dataConversation.IDConversation).emit("receive_message", {
+          ...linkmessage,
+          userSender,
+        });
 
         await updateLastChangeConversation(
           payload.IDConversation,
@@ -342,11 +346,10 @@ const handleSendMessage = async (io, socket) => {
           dataMessage
         );
       }
-      console.log(textmessage);
-      io.to(dataConversation.IDConversation).emit(
-        "receive_message",
-        textmessage
-      );
+      io.to(dataConversation.IDConversation).emit("receive_message", {
+        ...textmessage,
+        userSender,
+      });
 
       await updateLastChangeConversation(
         payload.IDConversation,
@@ -533,22 +536,53 @@ const handleRemoveMemberFromGroup = async (io, socket) => {
       return;
     }
 
-    list.forEach(async (conversation) => {
+    let data = "";
+    for (let conversation of list) {
       let memberSet = new Set(conversation.groupMembers);
       groupMembers.forEach((member) => {
         memberSet.delete(member);
       });
       conversation.groupMembers = Array.from(memberSet);
-      groupMembers.forEach(async (member) => {
+      for (member of groupMembers) {
         await conversationController.removeConversationByID(
           IDConversation,
           member
         );
-      });
-      const data = await conversationController.updateConversation(
-        conversation
-      );
-    });
+      }
+      // groupMembers.forEach(async (member) => {
+      //   await conversationController.removeConversationByID(
+      //     IDConversation,
+      //     member
+      //   );
+      // });
+
+      data = await conversationController.updateConversation(conversation);
+    }
+    // list.forEach(async (conversation) => {
+    //   let memberSet = new Set(conversation.groupMembers);
+    //   groupMembers.forEach((member) => {
+    //     memberSet.delete(member);
+    //   });
+    //   conversation.groupMembers = Array.from(memberSet);
+    //   for (member of groupMembers) {
+    //     await conversationController.removeConversationByID(
+    //       IDConversation,
+    //       member
+    //     );
+    //   }
+    //   groupMembers.forEach(async (member) => {
+    //     await conversationController.removeConversationByID(
+    //       IDConversation,
+    //       member
+    //     );
+    //   });
+
+    //   data = await conversationController.updateConversation(conversation);
+    // });
+
+    await updateLastChangeConversation(IDConversation, data.IDNewestMessage);
+
+    socket.emit("new_group_conversation", "Load conversation again!");
 
     groupMembers.forEach(async (member) => {
       const user = getUser(member);
