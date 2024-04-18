@@ -21,6 +21,14 @@ const schema = new dynamoose.Schema({
         type: Boolean,
         default: false,
     },
+    isPass: {
+        type: Boolean,
+        default: false,
+    },
+    isReply: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const MessageDetail = dynamoose.model("MessageDetail", schema);
