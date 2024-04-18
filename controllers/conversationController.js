@@ -229,7 +229,7 @@ const getMemberInfoByIDConversation = async (req, res) => {
     IDSender,
   });
 
-  const conversationRules = conversation.rules;
+  const conversationRules = conversation?.rules;
 
   if (conversation) {
     const membersInfo = await Promise.all(
@@ -289,8 +289,7 @@ const updateInfoGroup = async (IDConversation, groupName, groupAvatar) => {
   const list = listConversation.Items || [];
 
   list.forEach(async (conversation) => {
-    if (groupName)
-      conversation.groupName = groupName;
+    if (groupName) conversation.groupName = groupName;
     if (groupAvatar) {
       const params = {
         Bucket: "products111",
@@ -309,8 +308,7 @@ const updateInfoGroup = async (IDConversation, groupName, groupAvatar) => {
     await updateConversation(conversation);
   });
   return "Success";
-
-}
+};
 
 module.exports = {
   getConversation,
@@ -328,5 +326,5 @@ module.exports = {
   getMemberInfoByIDConversation,
   deleteConversationByID,
   leaveGroup,
-  updateInfoGroup
+  updateInfoGroup,
 };
