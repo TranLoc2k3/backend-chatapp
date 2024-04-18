@@ -29,7 +29,7 @@ const createTextMessageDetail = async (
     type: "text",
     content: textMessage,
     isRemove: false,
-    // dateTime: moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS"),
+    dateTime: moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS"),
   };
   const newMessageDetail = MessageDetailModel.create(data);
   return newMessageDetail;
@@ -43,6 +43,7 @@ const createNewImageMessage = async (IDSender, IDConversation, image) => {
     type: "image",
     content: image,
     isRemove: false,
+    dateTime: moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS"),
   };
   const newMessageDetail = MessageDetailModel.create(data);
   return newMessageDetail;
@@ -56,6 +57,7 @@ const createNewFileMessage = async (IDSender, IDConversation, image) => {
     type: "file",
     content: image,
     isRemove: false,
+    dateTime: moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS"),
   };
   const newMessageDetail = MessageDetailModel.create(data);
   return newMessageDetail;
@@ -69,6 +71,7 @@ const createNewVideoMessage = async (IDSender, IDConversation, video) => {
     type: "video",
     content: video,
     isRemove: false,
+    dateTime: moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS"),
   };
   const newMessageDetail = MessageDetailModel.create(data);
   return newMessageDetail;
@@ -82,6 +85,7 @@ const handleLinkMessage = async (IDSender, IDConversation, link) => {
     type: "link",
     content: link,
     isRemove: false,
+    dateTime: moment.tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DDTHH:mm:ss.SSS"),
   };
   const newMessageDetail = MessageDetailModel.create(data);
   return newMessageDetail;
