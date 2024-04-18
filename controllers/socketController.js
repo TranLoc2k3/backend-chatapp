@@ -656,6 +656,7 @@ const handleReplyMessage = async (io, socket) => {
   socket.on("reply_message", async (payload) => {
     const { IDConversation, IDUser, IDReplyMessage, content } = payload;
 
+    const userSender = await UserModel.get(IDUser);
     let newMessage = {
       IDMessageDetail: uuidv4(),
       IDSender: IDUser,
@@ -686,7 +687,10 @@ const handleReplyMessage = async (io, socket) => {
     // Update last change và tin nhắn mới nhất cho tất cả các cuộc hội thoại có IDConversation
     await updateLastChangeConversation(IDConversation, message.IDMessageDetail);
 
-    io.to(IDConversation).emit("receive_message", message);
+    io.to(IDConversation).emit("receive_message", {
+      ...message,
+      userSender,
+    });
   });
 };
 // Hàm này để test các method của các controller bằng socket
