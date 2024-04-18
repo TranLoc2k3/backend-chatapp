@@ -297,7 +297,6 @@ const updateInfoGroup = async (IDConversation, groupName, groupAvatar) => {
     try {
       const s3Data = await s3.upload(params).promise();
       urlavatar = s3Data.Location;
-      console.log(urlavatar);
     } catch (err) {
       console.log(err);
     }
@@ -309,7 +308,6 @@ const updateInfoGroup = async (IDConversation, groupName, groupAvatar) => {
     if (groupAvatar) {
       conversation.groupAvatar = urlavatar;
     }
-    console.log(conversation)
     await updateConversation(conversation);
   }
   return "Success";
