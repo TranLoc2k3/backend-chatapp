@@ -2,7 +2,8 @@ const router = require("express").Router();
 const userController = require("../controllers/userController");
 const conversationController = require("../controllers/conversationController");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+// const upload = multer({ dest: "uploads/" });
+const upload = multer();
 router.post("/get-list-friend", userController.getFriendListByID);
 router.post(
   "/getMessageDetail",
@@ -70,8 +71,9 @@ router.post("/leave-group", async (req, res) => {
 
 });
 
-router.post("/update-info-group", async (req, res) => {
-  const { IDConversation, groupName, groupAvatar } = req.body;
+router.post("/update-info-group", upload.single("groupAvatar"), async (req, res) => {
+  const { IDConversation, groupName } = req.body;
+  const groupAvatar = req.file.buffer;
   const data = await conversationController.updateInfoGroup(IDConversation, groupName, groupAvatar);
   res.json(data);
 });
