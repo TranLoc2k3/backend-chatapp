@@ -143,7 +143,11 @@ const handleLoadConversation = (io, socket) => {
         socket.join(conversation.IDConversation);
       });
     }
-    socket.emit("load_conversations_server", res);
+
+    const user = getUser(IDUser);
+    if (user?.socketId) {
+      io.to(user.socketId).emit("load_conversations_server", res);
+    } else socket.emit("load_conversations_server", res);
   });
 };
 
