@@ -168,7 +168,7 @@ const getMessageDetailByIDConversation = async (req, res) => {
     dataBucketMessage = await BucketMessageController.getBucketMessageByID(
       IDBucketMessage
     );
-    listIDMessageDetail = dataBucketMessage.listIDMessageDetail;
+    listIDMessageDetail = dataBucketMessage?.listIDMessageDetail;
   }
 
   if (listIDMessageDetail) {

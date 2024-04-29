@@ -159,6 +159,7 @@ const handleFriendRequest = async (req, res) => {
       return res.status(200).json({
         code: 1,
         message: `Friend request ${type.toLowerCase()} successfully`,
+        senderID: updated.senderId,
       });
     }
 
