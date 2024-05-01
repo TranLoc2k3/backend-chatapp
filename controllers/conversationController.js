@@ -168,7 +168,7 @@ const getMessageDetailByIDConversation = async (req, res) => {
     dataBucketMessage = await BucketMessageController.getBucketMessageByID(
       IDBucketMessage
     );
-    listIDMessageDetail = dataBucketMessage.listIDMessageDetail;
+    listIDMessageDetail = dataBucketMessage?.listIDMessageDetail;
   }
 
   if (listIDMessageDetail) {
@@ -177,11 +177,14 @@ const getMessageDetailByIDConversation = async (req, res) => {
         const data = await MessageDetailController.getMessagesDetailByID(
           IDMessageDetail
         );
-        const userSender = await UserModel.get(data.IDSender);
-        return {
-          ...data,
-          userSender: userSender,
-        };
+        if (data) {
+          const userSender = await UserModel.get(data.IDSender);
+          return {
+            ...data,
+            userSender: userSender,
+          };
+        }
+        return data;
       })
     );
     listMessageDetail.reverse();
