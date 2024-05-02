@@ -93,7 +93,8 @@ const handleLoadConversation = (io, socket) => {
       IDUser,
       lastEvaluatedKey
     );
-    if (!data.Items) return;
+    // chỉnh sửa
+    if (!data) return;
     const listIDConversation = data.Items?.map((item) => item.IDConversation);
     const lastKey = data.LastEvaluatedKey;
     const listConversation = await Promise.all(
