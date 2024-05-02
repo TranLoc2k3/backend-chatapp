@@ -3,6 +3,7 @@ const FriendRequestModel = require("../models/FriendRequestModel");
 const bcrypt = require("bcrypt");
 const conversationController = require("./conversationController");
 const MessageController = require("./MessageController");
+const Conversation = require("../models/ConversationModel");
 const getAllUser = async (req, res) => {
   try {
     const data = await UserModel.scan().exec();
@@ -235,6 +236,58 @@ const getFriendListByID = async (req, res) => {
   } else res.json({ message: "User not found" });
 };
 
+const unFriend = async (req, res) => {
+  try {
+    const { senderId, receiverId } = req.body;
+    const sender = await UserModel.get(senderId);
+    const receiver = await UserModel.get(receiverId);
+    if (!sender || !receiver) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 1 delete friend request
+    const requests = await FriendRequestModel.scan().exec();
+    const requestDelete = requests.filter(
+      (request) =>
+        (request.senderId === senderId && request.receiverId === receiverId) ||
+        (request.senderId === receiverId && request.receiverId === senderId)
+    );
+    console.log("requestDelete",requestDelete);
+    for (const request of requestDelete) {
+      await request.delete();
+    }
+
+    // 2 delete conversation;
+    const conversations = await Conversation.scan().exec();
+    const conversationsToDelete = conversations.filter(
+      (conversation) =>
+        (conversation.IDSender === senderId &&
+          conversation.IDReceiver === receiverId) ||
+        (conversation.IDSender === receiverId &&
+          conversation.IDReceiver === senderId)
+    );
+    
+    console.log("conversationsToDelete",conversationsToDelete);
+    // Lặp qua các cuộc trò chuyện và xóa chúng
+    for (const conversation of conversationsToDelete) {
+      await conversation.delete();
+    }
+    // 3 remove friend from friendList
+    if (sender.friendList && sender.friendList.includes(receiverId)) {
+      //1  remove receiverId from sender's friendList
+      sender.friendList = sender.friendList.filter((id) => id !== receiverId);
+      await sender.save();
+    }
+    if (receiver.friendList && receiver.friendList.includes(senderId)) {
+      receiver.friendList = receiver.friendList.filter((id) => id !== senderId);
+      await receiver.save();
+    }
+    return res.status(200).json({ message: "Unfriend successfully" });
+  } catch (error) {
+    return res.status(404).json({ message: "Fail unfriend" });
+  }
+};
+
 module.exports = {
   getAllUser,
   getUserByID,
@@ -245,4 +298,5 @@ module.exports = {
   getAllFriendRequests,
   updatePasswordByID,
   getFriendListByID,
+  unFriend,
 };
