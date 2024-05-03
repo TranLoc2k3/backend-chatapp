@@ -725,4 +725,6 @@ module.exports = {
   hadlePassMessage,
   handleLoadMemberOfGroup,
   handleReplyMessage,
+  getUser,
+  getUserBySocketId
 };
