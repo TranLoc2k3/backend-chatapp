@@ -16,6 +16,7 @@ const server = createServer(app);
 // Socket IO
 const io = require("./configs/socket").initSocketIO(server);
 const socketController = require("./controllers/socketController");
+const WebRTCController = require("./controllers/WebRTCController");
 
 app.use(cors());
 app.use(express.json());
@@ -48,6 +49,8 @@ io.on("connection", (socket) => {
   socketController.handleTestSocket(io, socket);
 
   socketController.handleLoadMemberOfGroup(io, socket);
+
+  WebRTCController.handleCall(io, socket);
 });
 
 server.listen(port, () => {
