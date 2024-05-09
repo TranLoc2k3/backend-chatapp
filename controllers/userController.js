@@ -27,7 +27,8 @@ const getUserByPhone = async (req, res) => {
     if (myUser) {
       return res.status(200).json(myUser);
     }
-    return res.status(404).json({ message: "User not found" });
+    // De tam 200 de fake info location
+    return res.status(200).json({ message: "User not found" });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal Server Error" });

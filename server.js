@@ -9,6 +9,7 @@ const userRoutes = require("./routes/user");
 const conversation = require("./routes/conversation");
 const friendRequest = require("./routes/friendRequest");
 const message = require("./routes/message");
+const map = require("./routes/map");
 const port = 8080;
 
 const app = express();
@@ -29,6 +30,7 @@ app.use("/user", userRoutes);
 app.use("/conversation", conversation);
 app.use("/friend-request", friendRequest);
 app.use("/message", message);
+app.use("/map", map);
 
 io.on("connection", (socket) => {
   console.log("a user connected with id: ", socket.id);
@@ -53,6 +55,33 @@ io.on("connection", (socket) => {
   WebRTCController.handleCall(io, socket);
 });
 
+// const UserLocation = require('./models/UserLocation');
+// const { v4: uuidv4 } = require('uuid');
+// let cnt = 0;
+// fetch('https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson')
+//   .then(response => response.json())
+//   .then(data => {
+//     for (const location of data.features) {
+//       const id = uuidv4();
+//       const userLocation = new UserLocation({
+//         ID: id,
+//         geometry: location.geometry,
+//         properties: {
+//           IDUser: id,
+//         },
+//         type: location.type,
+//       });
+//       userLocation.save();
+//       console.log('Save location success');
+//       cnt += 1;
+//       if (cnt == 500)
+//         break; // Exit the loop after the first iteration
+//     }
+
+//   })
+//   .catch(error => console.error('Error:', error));
+
 server.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
+
 });
