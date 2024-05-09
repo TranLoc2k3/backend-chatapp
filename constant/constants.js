@@ -1,7 +1,7 @@
 // Frontend Web & app lấy thông tin từ constants.js này để sử dụng tránh sai sót
 export const callType = {
-    CHAT_PERSONAL_CODE: "SOUND_PERSONAL_CODE",
-    VIDEO_PERSONAL_CODE: "VIDEO_PERSONAL_CODE",
+    SOUND_PERSONAL: "SOUND_PERSONAL",
+    VIDEO_PERSONAL: "VIDEO_PERSONAL",
 };
 
 export const preOfferAnswer = {
