@@ -70,7 +70,7 @@ router.post("/leave-group", async (req, res) => {
   }
 
 });
-
+router.post('/get-conversation-by-user-friend',conversationController.getConversationByUserFriend);
 router.post("/update-info-group", upload.single("groupAvatar"), async (req, res) => {
   const { IDConversation, groupName } = req.body;
   const groupAvatar = req.file.buffer;

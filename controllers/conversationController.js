@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require("uuid");
 const s3 = require("../configs/connectS3");
 const fs = require("fs");
 const { DataPipeline } = require("aws-sdk");
+const Conversation = require("../models/ConversationModel");
 
 const getConversation = async (IDUser, lastEvaluatedKey) => {
   const params = {
@@ -314,7 +315,24 @@ const updateInfoGroup = async (IDConversation, groupName, groupAvatar) => {
   }
   return "Success";
 };
-
+const getConversationByUserFriend = async (req, res) => {
+  try {
+    const { IDSender, IDReceiver } = req.body;
+    console.log(IDSender);
+    console.log(IDReceiver);
+    if (!IDSender && !IDReceiver) {
+      return { message: "IDUser and IDFriend is required" };
+    }
+    const conversations = await Conversation.scan().exec();
+    const conversation1 = await conversations.find(
+      (item) => item.IDSender === IDSender && item.IDReceiver === IDReceiver
+    );
+    console.log("vai", conversation1);
+    return res.status(200).json(conversation1);
+  } catch (error) {
+    return res.status(400);
+  }
+};
 module.exports = {
   getConversation,
   getConversationByID,
@@ -332,4 +350,5 @@ module.exports = {
   deleteConversationByID,
   leaveGroup,
   updateInfoGroup,
+  getConversationByUserFriend,
 };

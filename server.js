@@ -51,8 +51,12 @@ io.on("connection", (socket) => {
   socketController.handleTestSocket(io, socket);
 
   socketController.handleLoadMemberOfGroup(io, socket);
+  socketController.getConversationByUserFriend(io, socket);
+  socketController.handleBlockFriend(io, socket);
+  socketController.handleUnBlockFriend(io, socket);
 
   WebRTCController.handleCall(io, socket);
+
 });
 
 // const UserLocation = require('./models/UserLocation');
