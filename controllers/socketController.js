@@ -722,8 +722,8 @@ const getConversationByUserFriend = async (io, socket) => {
     });
 
     if (
-      conversationSender.isBlock == true ||
-      conversationReceiver.isBlock == true
+      conversationSender?.isBlock == true ||
+      conversationReceiver?.isBlock == true
     ) {
      
       socket.emit("get_block_friend_server", true);

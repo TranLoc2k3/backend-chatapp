@@ -333,6 +333,50 @@ const getConversationByUserFriend = async (req, res) => {
     return res.status(400);
   }
 };
+
+const searchConversationByName = async (IDUser, keyword) => {
+  const params = {
+    TableName: "Conversation",
+    IndexName: "IDSender-lastChange-index",
+    KeyConditionExpression: "IDSender = :sender",
+    ExpressionAttributeValues: {
+      ":sender": IDUser,
+    },
+  };
+  try {
+    const data = await docClient.query(params).promise();
+    let listConversation = [];
+    let candidateName = "";
+    let normalizedCandidateName = "";
+    let normalizedKeyword = keyword.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    await Promise.all(data?.Items.map(async (item) => {
+      let dataConversation = await getConversationByID(item.IDConversation, IDUser);
+
+      if (dataConversation.isGroup) {
+        candidateName = dataConversation.groupName;
+      }
+      else {
+        const user = await UserModel.get(dataConversation.IDReceiver);
+        candidateName = user.fullname;
+
+        dataConversation = {
+          ...dataConversation,
+          fullnameReceiver: user.fullname,
+          urlavatarReceiver: user.urlavatar,
+        }
+      }
+      
+      normalizedCandidateName = candidateName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      if (normalizedCandidateName.includes(normalizedKeyword)) {
+        listConversation.push(dataConversation);
+      }
+
+    }));
+    return listConversation;
+  } catch (error) {
+    console.log(error);
+  }
+}
 module.exports = {
   getConversation,
   getConversationByID,
@@ -351,4 +395,5 @@ module.exports = {
   leaveGroup,
   updateInfoGroup,
   getConversationByUserFriend,
+  searchConversationByName
 };

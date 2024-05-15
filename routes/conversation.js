@@ -78,4 +78,10 @@ router.post("/update-info-group", upload.single("groupAvatar"), async (req, res)
   res.json(data);
 });
 
+router.post("/search-group", async (req, res) => {
+  const {IDUser, keyword} = req.body;
+  const data = await conversationController.searchConversationByName(IDUser, keyword);
+  res.json(data);
+});
+
 module.exports = router;
