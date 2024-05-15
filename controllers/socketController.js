@@ -11,6 +11,7 @@ const URL = require("url").URL;
 const MessageDetailModel = require("../models/MessageDetailModel");
 const UserModel = require("../models/UserModel");
 const { group } = require("console");
+const Conversation = require("../models/ConversationModel");
 let onlineUsers = [];
 
 const addNewUser = (phone, socketId) => {
@@ -698,6 +699,110 @@ const handleReplyMessage = async (io, socket) => {
     });
   });
 };
+//  chặn bạn quý
+const getConversationByUserFriend = async (io, socket) => {
+  socket.on("get_block_friend", async (payload) => {
+    const { IDConversation1, IDSender, IDReceiver } = payload;
+    if (!IDSender || !IDReceiver || !IDConversation1) {
+      console.error("Invalid user ID Conversation ");
+      return;
+    }
+    let IDConversation = IDConversation1;
+
+    const conversationSender = await Conversation.get({
+      IDConversation,
+      IDSender,
+      IDReceiver,
+    });
+
+    const conversationReceiver = await Conversation.get({
+      IDConversation,
+      IDSender: IDReceiver,
+      IDReceiver: IDSender,
+    });
+
+    if (
+      conversationSender?.isBlock == true ||
+      conversationReceiver?.isBlock == true
+    ) {
+     
+      socket.emit("get_block_friend_server", true);
+      if (conversationSender) {
+        io.to(IDReceiver).emit("get_block_friend_server", true);
+      }
+    } else {
+      socket.emit("get_block_friend_server", false);
+      io.to(IDReceiver).emit("get_block_friend_server", false);
+    }
+  });
+};
+
+const handleBlockFriend = async (io, socket) => {
+  socket.on("block_friend", async (payload) => {
+    try {
+      const { IDConversation1, IDSender, IDReceiver } = payload;
+      let IDConversation = IDConversation1;
+
+      if (!IDSender || !IDReceiver || !IDConversation) {
+        console.error("Invalid user ID Conversation ");
+        return;
+      }
+
+     // Chặn dựa trên IDConversation, IDSender, IDReceiver
+      const conversations = await Conversation.update({
+        IDConversation,
+        IDSender,
+        IDReceiver,
+        isBlock: true,
+      });
+      if (!conversations) {
+        console.error("Conversation not found");
+        return;
+      }
+
+      if (conversations) {
+        socket.emit("block_friend_server", "Block successful");
+      }
+
+    } catch (error) {
+      console.error("Error handling block friend:", error);
+      socket.emit("block_friend_server", "Block failed");
+    }
+  });
+};
+const handleUnBlockFriend = async (io, socket) => {
+  socket.on("un_block_friend", async (payload) => {
+    try {
+      const { IDConversation1, IDSender, IDReceiver } = payload;
+      let IDConversation = IDConversation1;
+      if (!IDSender || !IDReceiver || !IDConversation) {
+        console.error("Invalid user ID Conversation ");
+        return;
+      }
+
+      // mở Chặn dựa trên IDConversation, IDSender, IDReceiver
+      const conversations = await Conversation.update({
+        IDConversation,
+        IDSender,
+        IDReceiver,
+        isBlock: false,
+      });
+
+      if (!conversations) {
+        console.error("Conversation not found");
+        return;
+      }
+      await conversations.save();
+
+      socket.emit("un_block_friend_server", "Unblock successful");
+      handleDisconnect();
+    } catch (error) {
+      console.error("Error handling un block friend:", error);
+      socket.emit("un_block_friend_server", "Unblock failed");
+    }
+  });
+};
+
 // Hàm này để test các method của các controller bằng socket
 const handleTestSocket = async (io, socket) => {};
 
@@ -709,6 +814,33 @@ const handleLoadMemberOfGroup = async (io, socket) => {
       "load_member_of_group_server",
       "Load member group again"
     );
+  });
+};
+
+const handleChangeOwnerGroup = async (io, socket) => {
+  socket.on("change_owner_group", async (payload) => {
+    const { IDConversation, IDUser, IDNewOwner } = payload;
+    const listConversation =
+      await conversationController.getAllConversationByID(IDConversation);
+    const list = listConversation.Items || [];
+
+    // Check permission
+    if (list[0].rules.IDOwner !== IDUser) {
+      socket.emit("message_from_server", "You are not owner of this group!");
+      return;
+    }
+
+    for (let conversation of list) {
+      conversation.rules.IDOwner = IDNewOwner;
+      let CoOwner = new Set(conversation.rules.listIDCoOwner);
+      if (CoOwner.has(IDNewOwner)) {
+        CoOwner.delete(IDNewOwner);
+        conversation.rules.listIDCoOwner = Array.from(CoOwner);
+      }
+      const data = await conversationController.updateConversation(conversation);
+    }
+
+    io.to(IDConversation).emit("new_group_conversation", "Load conversation again!");
   });
 };
 
@@ -727,5 +859,9 @@ module.exports = {
   handleLoadMemberOfGroup,
   handleReplyMessage,
   getUser,
-  getUserBySocketId
+  getUserBySocketId,
+  getConversationByUserFriend,
+  handleBlockFriend,
+  handleUnBlockFriend,
+  handleChangeOwnerGroup
 };

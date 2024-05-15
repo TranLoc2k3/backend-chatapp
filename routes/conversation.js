@@ -70,11 +70,17 @@ router.post("/leave-group", async (req, res) => {
   }
 
 });
-
+router.post('/get-conversation-by-user-friend',conversationController.getConversationByUserFriend);
 router.post("/update-info-group", upload.single("groupAvatar"), async (req, res) => {
   const { IDConversation, groupName } = req.body;
   const groupAvatar = req.file.buffer;
   const data = await conversationController.updateInfoGroup(IDConversation, groupName, groupAvatar);
+  res.json(data);
+});
+
+router.post("/search-group", async (req, res) => {
+  const {IDUser, keyword} = req.body;
+  const data = await conversationController.searchConversationByName(IDUser, keyword);
   res.json(data);
 });
 

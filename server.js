@@ -43,6 +43,7 @@ io.on("connection", (socket) => {
   socketController.handleAddMemberToGroup(io, socket);
   socketController.handleRemoveMemberFromGroup(io, socket);
   socketController.handleDeleteGroup(io, socket);
+  socketController.handleChangeOwnerGroup(io, socket);
 
   socketController.handleSendMessage(io, socket);
   socketController.handleChangeStateMessage(io, socket);
@@ -51,35 +52,13 @@ io.on("connection", (socket) => {
   socketController.handleTestSocket(io, socket);
 
   socketController.handleLoadMemberOfGroup(io, socket);
+  socketController.getConversationByUserFriend(io, socket);
+  socketController.handleBlockFriend(io, socket);
+  socketController.handleUnBlockFriend(io, socket);
 
   WebRTCController.handleCall(io, socket);
+
 });
-
-// const UserLocation = require('./models/UserLocation');
-// const { v4: uuidv4 } = require('uuid');
-// let cnt = 0;
-// fetch('https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson')
-//   .then(response => response.json())
-//   .then(data => {
-//     for (const location of data.features) {
-//       const id = uuidv4();
-//       const userLocation = new UserLocation({
-//         ID: id,
-//         geometry: location.geometry,
-//         properties: {
-//           IDUser: id,
-//         },
-//         type: location.type,
-//       });
-//       userLocation.save();
-//       console.log('Save location success');
-//       cnt += 1;
-//       if (cnt == 500)
-//         break; // Exit the loop after the first iteration
-//     }
-
-//   })
-//   .catch(error => console.error('Error:', error));
 
 server.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

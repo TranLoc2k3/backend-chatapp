@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require("uuid");
 const s3 = require("../configs/connectS3");
 const fs = require("fs");
 const { DataPipeline } = require("aws-sdk");
+const Conversation = require("../models/ConversationModel");
 
 const getConversation = async (IDUser, lastEvaluatedKey) => {
   const params = {
@@ -314,7 +315,68 @@ const updateInfoGroup = async (IDConversation, groupName, groupAvatar) => {
   }
   return "Success";
 };
+const getConversationByUserFriend = async (req, res) => {
+  try {
+    const { IDSender, IDReceiver } = req.body;
+    console.log(IDSender);
+    console.log(IDReceiver);
+    if (!IDSender && !IDReceiver) {
+      return { message: "IDUser and IDFriend is required" };
+    }
+    const conversations = await Conversation.scan().exec();
+    const conversation1 = await conversations.find(
+      (item) => item.IDSender === IDSender && item.IDReceiver === IDReceiver
+    );
+    console.log("vai", conversation1);
+    return res.status(200).json(conversation1);
+  } catch (error) {
+    return res.status(400);
+  }
+};
 
+const searchConversationByName = async (IDUser, keyword) => {
+  const params = {
+    TableName: "Conversation",
+    IndexName: "IDSender-lastChange-index",
+    KeyConditionExpression: "IDSender = :sender",
+    ExpressionAttributeValues: {
+      ":sender": IDUser,
+    },
+  };
+  try {
+    const data = await docClient.query(params).promise();
+    let listConversation = [];
+    let candidateName = "";
+    let normalizedCandidateName = "";
+    let normalizedKeyword = keyword.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    await Promise.all(data?.Items.map(async (item) => {
+      let dataConversation = await getConversationByID(item.IDConversation, IDUser);
+
+      if (dataConversation.isGroup) {
+        candidateName = dataConversation.groupName;
+      }
+      else {
+        const user = await UserModel.get(dataConversation.IDReceiver);
+        candidateName = user.fullname;
+
+        dataConversation = {
+          ...dataConversation,
+          fullnameReceiver: user.fullname,
+          urlavatarReceiver: user.urlavatar,
+        }
+      }
+      
+      normalizedCandidateName = candidateName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      if (normalizedCandidateName.includes(normalizedKeyword)) {
+        listConversation.push(dataConversation);
+      }
+
+    }));
+    return listConversation;
+  } catch (error) {
+    console.log(error);
+  }
+}
 module.exports = {
   getConversation,
   getConversationByID,
@@ -332,4 +394,6 @@ module.exports = {
   deleteConversationByID,
   leaveGroup,
   updateInfoGroup,
+  getConversationByUserFriend,
+  searchConversationByName
 };
