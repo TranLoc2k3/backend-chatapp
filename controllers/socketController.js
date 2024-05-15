@@ -817,6 +817,33 @@ const handleLoadMemberOfGroup = async (io, socket) => {
   });
 };
 
+const handleChangeOwnerGroup = async (io, socket) => {
+  socket.on("change_owner_group", async (payload) => {
+    const { IDConversation, IDUser, IDNewOwner } = payload;
+    const listConversation =
+      await conversationController.getAllConversationByID(IDConversation);
+    const list = listConversation.Items || [];
+
+    // Check permission
+    if (list[0].rules.IDOwner !== IDUser) {
+      socket.emit("message_from_server", "You are not owner of this group!");
+      return;
+    }
+
+    for (let conversation of list) {
+      conversation.rules.IDOwner = IDNewOwner;
+      let CoOwner = new Set(conversation.rules.listIDCoOwner);
+      if (CoOwner.has(IDNewOwner)) {
+        CoOwner.delete(IDNewOwner);
+        conversation.rules.listIDCoOwner = Array.from(CoOwner);
+      }
+      const data = await conversationController.updateConversation(conversation);
+    }
+
+    io.to(IDConversation).emit("new_group_conversation", "Load conversation again!");
+  });
+};
+
 module.exports = {
   handleSendFriendRequest,
   handleUserOnline,
@@ -836,4 +863,5 @@ module.exports = {
   getConversationByUserFriend,
   handleBlockFriend,
   handleUnBlockFriend,
+  handleChangeOwnerGroup
 };
