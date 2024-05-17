@@ -20,6 +20,7 @@ const schema = new dynamoose.Schema({
     groupAvatar: String,
     IDReceiver: String,
     IDNewestMessage: String,
+    isBlock: Boolean,
     rules: {
         type: Object,
         schema: {
